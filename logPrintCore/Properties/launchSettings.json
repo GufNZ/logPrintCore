@@ -1,0 +1,8 @@
+{
+	"profiles": {
+		"logPrintCore": {
+			"commandName": "Project",
+			"commandLineArgs": "-r GitAll -f GitAll D:\\cygwin64\\home\\307748\\GA.log"
+		}
+	}
+}

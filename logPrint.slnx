@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="config.png" />
+    <File Path="docs.png" />
+    <File Path="LICENSE" />
+    <File Path="logPrint.sln.DotSettings" />
+    <File Path="NuGet.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="logPrintCore/logPrintCore.csproj" />
+  <Project Path="logPrintCoreTests/logPrintCoreTests.csproj" />
+</Solution>
