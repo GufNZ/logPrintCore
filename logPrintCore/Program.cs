@@ -131,7 +131,7 @@ internal static partial class Program {
 
 	private static void WriteException(Exception exception, TextWriter @out) {
 		@out.Write(exception);
-		//NOTE: YamlDotNet exceptions overrise ToString, hiding any InnerException details!.
+		//NOTE: YamlDotNet exceptions override ToString, hiding any InnerException details!.
 		if (exception is YamlException { InnerException: not null } yx) {
 			@out.Write($"{Environment.NewLine}-> {yx.InnerException}");
 		}
@@ -140,6 +140,7 @@ internal static partial class Program {
 	}
 
 	private static void Main(string[] args) {
+		Console.OutputEncoding = Encoding.UTF8;
 		var exitCode = 0;
 		try {
 			Run(args);
@@ -1285,21 +1286,36 @@ internal static partial class Program {
 		var length = "LogPrint:".Length;
 		const string DEBUG = "";
 #endif
-
-		var template = Enumerable.Range(0, length)
-			.Select(n => n == length - 1
-				? "b"
-				: Colour.Lerp(new(0, 192, 255), 1.0 * n / (length - 2), new(0, 0, 255))
+		var templateLength = (length - 1) * 2;
+		var template = Enumerable.Range(0, templateLength)
+			.Select(
+				n => Colour.Lerp(new(0, 192, 255), 1.0 * n / (templateLength - 1), new(0, 0, 255))
 					.ToString()
 			)
-			.ToArray();
+			.Concat(["b", "k"])
+			.Select((c, i) => (c, i))
+			.Aggregate(
+				new List<string>(),
+				(list, pair) => {
+					if (pair.i % 2 == 0) {
+						list.Add(pair.c);
+					} else {
+						list[^1] += $",{pair.c}";
+					}
+
+					return list;
+				}
+			);
 
 		string Indent(int count) {
 			return (count < length)
-				? template[count..]
+				? template[(count)..]
 					.Aggregate(
 						new StringBuilder(),
-						(sb, c) => sb.Append($"#{c}# "),
+						(sb, c) => {
+							var cc = c.Split(',');
+							return sb.Append($"~{cc[0]}~#{cc[1]}#\u25E4");
+						},
 						sb => sb.Append("#k#").Append(new string(' ', count)).ToString()
 					)
 				: FunkyIndent(length);
@@ -1309,7 +1325,7 @@ internal static partial class Program {
 			var sb = new StringBuilder();
 			var j = 0;
 			for (var i = 0; i < input.Length; i++) {
-				sb.Append($"#{template[j++]}#")
+				sb.Append($"#{template[j][..template[j++].IndexOf(',')]}#")
 					.Append(input[i]);
 				if (input[i] == '~') {
 					sb.Append(input[++i])
