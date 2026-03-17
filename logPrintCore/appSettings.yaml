@@ -1195,6 +1195,13 @@ FlagSets:
                     - { When: 'state == 1',                 OutputCode: '#b#~G~ Pull ~Y~{count,2}~w~/~M~{max,2}' }
                     - { When: 'state == 2',                 OutputCode: '#b#~R~   GC ~Y~{count,2}~w~/~M~{max,2}' }
 
+    -   Name: Scrubber
+        Flags:
+            -   Name: Seeking
+                Off: ~k~S
+                On: ~G~S
+                OnMatch: 'seeking.+true'
+                OffMatch: 'seeking.+false'
 # Shared chunks of stuff:
 __shared:
     DateVars: &DateVars
@@ -1258,12 +1265,12 @@ __shared:
         JSONNewline:    '\n'
         JSONProp:       ~y~
         JSONColon:      '~Y~: '
-        JSONComma:      '~r~,'
-        JSONBrace:      ~m~
+        JSONComma:      '~$A00~,'
+        JSONBrace:      ~$80F~
         JSONBracket:    ~c~
         JSONString:     ~w~
         JSONBool:       ~C~
-        JSONInt:        ~B~
+        JSONInt:        ~$08F~
         JSONFloat:      '#b#~c~'
         JSONNull:       '#b#~R~'
         JSONUndefined:  '#r#~B~'
@@ -1798,24 +1805,24 @@ RuleSets:
                 Push: false
                 Repeat: true
                 Groups:
-                    -   Name: css.bold
-                        Match: 'font-weight:\s*bold(?:;\s*)?'
-                        Replace: '~W~$0'
-                        Push: false
-
                     -   Name: css.bg
-                        Match: 'background-color: ##(...)(?:;\s*)?'
-                        Replace: '#$$$1#$0'
+                        Match: 'background(?:-color)?: ##(...)(?:;\s*)?'
+                        Replace: '#$$$1#'
                         Push: false
 
                     -   Name: css.border
                         Match: 'border: [^;]+##(...)(?:;\s*)?'
-                        Replace: '~<~~$$$1~<{[ ~>~$0'
+                        Replace: '~<~~$$$1~<{[ ~>~'
                         Push: false
 
                     -   Name: css.fg
                         Match: 'color: ##(...)(?:;\s*)?'
-                        Replace: '~$$$1~$0'
+                        Replace: '~$$$1~'
+                        Push: false
+
+                    -   Name: css.bold
+                        Match: '(^.+)font-weight:\s*bold(?:;\s*)?'
+                        Replace: '~W~$1'
                         Push: false
 
                     -   Name: css.unhandled
