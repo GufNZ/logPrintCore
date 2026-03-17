@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 
 // {Ctrl+M, O} is your friend...
 
@@ -87,6 +89,34 @@ internal static class StringExtensions {
 
 
 	extension(string str) {
+		public string Unescape(params (string oldValue, string newValue)[] replacements) {
+			// ReSharper disable once StringLiteralTypo
+			const string CHARS = "abefnrtv0\\";
+			const string REPLACES = "\a\b\e\f\n\r\t\v\0\\";
+			return Regex.Replace(
+				str,
+				@"(?<esc>\\)?\\(?<ch>.)",
+				match => {
+					if (match.Groups["esc"].Success) {
+						return match.Value[1..];
+					}
+
+
+					var index = CHARS.IndexOf(match.Groups["ch"].Value, StringComparison.Ordinal);
+					if (index > -1) {
+						return REPLACES[index].ToString();
+					}
+
+
+					var other = replacements
+						.FirstOrDefault(pair => pair.oldValue == match.Groups["ch"].Value)
+						.NullIfDefault();
+
+					return other?.newValue ?? match.Value;
+				}
+			);
+		}
+
 		public int GetStableHashCode() {
 			return (int)stringGetNonRandomizedHashCode.Invoke(str, [])!;
 		}

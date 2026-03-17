@@ -176,6 +176,7 @@ Docs:
                         [~M~Parse~y~: ~B~{~G~JSON~B~|~G~Parent~B~}~Y~]
                         ~M~Replace~y~: ~g~TEXT~Y~
                         [~M~Repeat~y~: ~G~True~Y~]
+                        [~M~Push~y~: ~G~False~Y~]
                     ~K~## or, ~m~Compound~K~ rule:
                     ~R~-
                         ~M~Name~y~: ~c~NAME~Y~
@@ -184,6 +185,7 @@ Docs:
                         [~M~Parse~y~: ~G~JSON~Y~]
                         ~M~Replace~y~: ~g~TEXT~Y~
                         [~M~Repeat~y~: ~G~True~Y~]
+                        [~M~Push~y~: ~G~False~Y~]
                         ~R~Groups~y~:
                             ~R~-
                                 ~M~Name~y~: ~c~GROUP_NAME~Y~[~G~.~c~SUFFIX~Y~]
@@ -192,6 +194,7 @@ Docs:
                                 [~M~Parse~y~: ~B~{~G~JSON~B~|~G~Parent~B~}~Y~]
                                 ~M~Replace~y~: ~g~TEXT~Y~
                                 [~M~Repeat~y~: ~G~True~Y~]
+                                [~M~Push~y~: ~G~False~Y~]
                                 [~R~Groups~y~: ~G~...~Y~]
         
         ~W~GENERAL
@@ -248,9 +251,11 @@ Docs:
             They first check for a match, using the ~M~test ~C~REGEX~w~, if present, otherwise using the ~M~match ~C~REGEX~w~.  No match means bail out and don't change the line.
             Then they apply the ~M~replace ~g~TEXT~w~ with the successful ~c~Match~w~ and update the line accordingly.  ~Y~Thus, order matters.  Subsequent ~R~Rule~r~s~Y~ are matching against the ~W~modified~Y~ line.~w~
         
-            If a rule is set to ~M~repeat~w~ then after it evaluates, it will re-apply itself until it no longer matches - thus such a rule can match against its own output.
+            If ~M~Repeat~w~ is set to ~G~True~w~ then after it evaluates, it will re-apply itself until it no longer matches - thus such a rule can match against its own output.
             ~y~Normally not needed as all matches are replaced at once if there are multiple on the line.~w~
-        
+            
+            If a ~M~Push~w~ is set to ~G~False~w~ then the ~M~replace~w~ment will not be wrapped in codes to save the current colours and restore them afterwards.  ~Y~Default: ~G~True~w~
+            
             If a rule is set to ~M~parse ~G~JSON~w~ then several things happen:
                 ~Y~*~w~ The matched named group ~G~JSON~w~ if present, or the entire match otherwise, is parsed as JSON;
                 ~Y~*~y~ Replace strings ~c~(see below)~w~ can call ~y~JSON functions~w~ to read and manipulate the parsed JSON;
@@ -278,7 +283,12 @@ Docs:
                             ~R~${~G~JSON.read(~C~PATH~G~)~R~}~y~   - ~w~Read a JSON ~C~PATH~w~, and remove the leaf once read.
                             ~R~${~G~JSON.read?(~C~PATH~G~)~R~}~y~  - ~w~Read a JSON ~C~PATH~w~, and remove the leaf once read; return null if not found.
                             ~R~${~G~JSON.unread()~R~}~y~     - ~w~Output all remaining JSON as a single complex object.~y~
-                                          Note that complex JSON values look for extra ~y~variables~w~ for formatting options ~c~(see below)~w~.
+                            Note that complex JSON values look for extra ~y~variables~w~ for formatting options ~c~(see below)~y~.
+                            Note also JSON is pretty-printed unless the above is suffixed with one of ~G~!~y~, ~G~^~y~ or ~G~%~y~,
+                                e.g. ~R~${~G~JSON.read?~Y~!~G~(~C~...~G~)~R~}~y~,
+                                where ~G~!~y~ means output compact JSON, all on one line with no extra spaces;
+                                      ~G~^~y~ means output make the first level compact, but expand after that;
+                                      ~G~%~y~ means output compact JSON for things with 1 child, or expanded otherwise.
         
                 ~y~Values for ~Y~x~y~:~W~
                     ! ~w~or~W~ RESET    Reset to the default colour.  Reset is not case-sensitive; all others are.
@@ -310,11 +320,12 @@ Docs:
         
                 ~y~Optional JSON formatting variables:~w~
                     ~G~JSONIndent    ~y~-~w~ If defined, this specifies the string to use for indentation.  (Defaults to ~y~3 spaces~w~)
+                    ~G~JSONMewline   ~y~-~w~ If defined, this specifies the string to use for newlines.     (Defaults to ~y~\n~w~)
                     ~G~JSONProp      ~y~-~w~ If defined, this specifies the colour for ~c~{ ~C~properties~c~: value }~w~;
                     ~G~JSONColon     ~y~-~w~ If defined, this specifies the colour for ~c~{ colons~C~:~c~ 0 }~w~;
                     ~G~JSONComma     ~y~-~w~ If defined, this specifies the colour for ~c~{ _: commas~C~,~c~ a: [0~C~,~c~ 1] }~w~;
                     ~G~JSONBrace     ~y~-~w~ If defined, this specifies the colour for ~C~{~c~ braces: 0 ~C~}~w~;
-                    ~G~JSONBraket    ~y~-~w~ If defined, this specifies the colour for ~C~[~c~ brackets ~C~]~w~;
+                    ~G~JSONBracket   ~y~-~w~ If defined, this specifies the colour for ~C~[~c~ brackets ~C~]~w~;
                     ~G~JSONString    ~y~-~w~ If defined, this specifies the colour for ~c~{ string: ~C~values~c~ }~w~;
                     ~G~JSONBool      ~y~-~w~ If defined, this specifies the colour for ~c~{ booleans: ~C~true~c~ }~w~;
                     ~G~JSONInt       ~y~-~w~ If defined, this specifies the colour for ~c~{ integer: ~C~values~c~ }~w~ (Defaults to the value of ~y~%JSONFloat%~w~);
@@ -380,32 +391,31 @@ FlagSets:
     #           #   - { When: Else, OutputCode: codeForInside$"" }
     -   Name: OBS
         Flags:
-            -
-                Name: ProcessRunning
+            -   Name: ProcessRunning
                 Off: ~K~O
                 OffMatch: OBS Process exited
                 On: '#Y#~K~O'
                 OnMatch: OBS Process started|OBS Process was running
-            -
-                Name: Connected
+
+            -   Name: Connected
                 Off: ~K~C
                 OffMatch: OBS Process exited
                 On: ~G~C
                 OnMatch: OBS WebSocket connected
-            -
-                Name: CachedScenes
+
+            -   Name: CachedScenes
                 Off: ~K~c
                 OffMatch: EmptyScenesCache|OBS Process exited
                 On: '#G#~K~c'
                 OnMatch: Got scenes from websocket
-            -
-                Name: StreamingRequested
+
+            -   Name: StreamingRequested
                 Off: ~r~s
                 On: ~g~s
                 ToggleMatch: ToggleStreaming\(\) called.
                 OffMatch: 'Stop stuff: streaming := stop\.\.\.'
-            -
-                Name: Streaming
+
+            -   Name: Streaming
                 Off: ~r~S
                 OffMatch: OnStreamingChanged\(Stopped\)|OBS Process exited
                 TransitionToOn: '#g#~r~S'
@@ -414,14 +424,14 @@ FlagSets:
                 OnMatch: OnStreamingChanged\(Started\)
                 TransitionToOff: '#R#~g~S'
                 TransitionToOffMatch: OnStreamingChanged\(Stopping\)
-            -
-                Name: RecordingRequested
+
+            -   Name: RecordingRequested
                 Off: ~r~r
                 On: ~g~r
                 ToggleMatch: ToggleRecording\(\) called.
                 OffMatch: 'Stop stuff: recording := stop\.\.\.'
-            -
-                Name: Recording
+
+            -   Name: Recording
                 Off: ~r~R
                 OffMatch: OnRecordingChanged\(Stopped\)|OBS Process exited
                 TransitionToOn: '#g#~r~R'
@@ -433,8 +443,7 @@ FlagSets:
             #- { Name: _, InitialState: On, OffMatch: (?!), On: '~k~ ' }
     -   Name: 60FPS
         Flags:
-            -
-                Name: StreamFPS
+            -   Name: StreamFPS
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)'
                 Types:
@@ -451,8 +460,7 @@ FlagSets:
                     - { When: Else,                 Output: ~K~F }
     -   Name: _60FPS
         Flags:
-            -
-                Name: StreamFPS
+            -   Name: StreamFPS
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)'
                 Types:
@@ -470,8 +478,7 @@ FlagSets:
                     - { When: Else,                 Output: ~K~--fps--- }
     -   Name: 30FPS
         Flags:
-            -
-                Name: StreamFPS
+            -   Name: StreamFPS
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)'
                 Types:
@@ -488,8 +495,7 @@ FlagSets:
                     - { When: Else,                 Output: ~K~F }
     -   Name: _30FPS
         Flags:
-            -
-                Name: StreamFPS
+            -   Name: StreamFPS
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)'
                 Types:
@@ -507,8 +513,7 @@ FlagSets:
                     - { When: Else,                 Output: ~K~--fps--- }
     -   Name: HighBitRate
         Flags:
-            -
-                Name: StreamBitRate
+            -   Name: StreamBitRate
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?bitRate=(?<kb>t;[^K]+)Kb/s .(?<bp>;[^b]+)'
                 Types:
@@ -526,8 +531,7 @@ FlagSets:
                     - { When: Else,                 Output: ~K~B }
     -   Name: _HighBitRate
         Flags:
-            -
-                Name: StreamBitRate
+            -   Name: StreamBitRate
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?bitRate=(?<kb>t;[^K]+)Kb/s .(?<bp>;[^b]+)'
                 Types:
@@ -548,8 +552,7 @@ FlagSets:
                     - { When: Else,                 Output: ~K~bRate }
     -   Name: LowBitRate
         Flags:
-            -
-                Name: StreamBitRate
+            -   Name: StreamBitRate
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?bitRate=(?<kb>t;[^K]+)Kb/s .(?<bp>;[^b]+)'
                 Types:
@@ -567,8 +570,7 @@ FlagSets:
                     - { When: Else,                 Output: ~K~B }
     -   Name: _LowBitRate
         Flags:
-            -
-                Name: StreamBitRate
+            -   Name: StreamBitRate
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?bitRate=(?<kb>t;[^K]+)Kb/s .(?<bp>;[^b]+)'
                 Types:
@@ -589,8 +591,7 @@ FlagSets:
                     - { When: Else,                 Output: ~K~bRate }
     -   Name: StreamHealth
         Flags:
-            -
-                Name: ReportedStrain
+            -   Name: ReportedStrain
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+strain=(?<strain>[^%]+)'
                 Types:
@@ -610,8 +611,8 @@ FlagSets:
                     - { When: 'on && strain < 0.9F',        Output: ~r~8 }
                     - { When: 'on && strain < 1.0F',        Output: ~R~9 }
                     - { When: Else,                         Output: '~K~?' }
-            -
-                Name: LocalStrain
+
+            -   Name: LocalStrain
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?time=(?<time>\d+); frames=(?<frames>[^;]+); dropped=(?<dropped>[^;]+)'
                 Types:
@@ -641,6 +642,7 @@ FlagSets:
                             droppedFrames[i] = FPS * time - frames;
                             localStrain = (droppedFrames[i] - droppedFrames[(i + 1) % HIST_LENGTH] + dropped) / (float)(HIST_LENGTH * FPS * SECS_PER_PING);
                             i = (i + 1) % HIST_LENGTH;
+
                     -   Name: Reset
                         Code: |
                             Array.Clear(droppedFrames, 0, droppedFrames.Length);
@@ -659,8 +661,8 @@ FlagSets:
                     - { When: 'on && localStrain < 0.9F', Output: ~r~8 }
                     - { When: 'on && localStrain < 1.0F', Output: ~R~9 }
                     - { When: 'Else', Output: ~K~/ }
-            -
-                Name: HealthScore
+
+            -   Name: HealthScore
                 TransitionToOnMatch: 'CalcHealth:: score'
                 OnMatch: 'CalcHealth:: score.+ = (?<score>-?\d)'
                 Types:
@@ -682,8 +684,8 @@ FlagSets:
                     - { When: 'score == -5', Output: '~k~#M#2' }
                     - { When: 'score == -6', Output: '~k~#r#1' }
                     - { When: 'Else', Output: ~K~\ }
-            -
-                Name: CalculatedHealth
+
+            -   Name: CalculatedHealth
                 TransitionToOnMatch: 'StreamingStatusPing|OnStreamingChanged.Stopped'
                 OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)[^(]+.(?<bps>[^b]+)b/s.; time=(?<time>\d+); frames=(?<frames>[^;]+); dropped=(?<dropped>[^;]+); strain=(?<strain>[^%]+)'
                 Types:
@@ -772,6 +774,7 @@ FlagSets:
                             
                             i = (i + 1) % HIST_LENGTH;
                             histSat = Math.Min(histSat + 1, HIST_LENGTH);
+
                     -   Name: Reset
                         Code: |
                             Array.Clear(history, 0, history.Length);
@@ -786,20 +789,19 @@ FlagSets:
     -   Name: Conversation
         TrackID: 'Conversation(?:Start|End)ing(?:Begin|End)\(\) (?:enter|leave) \((?<id>[^)]+)?\)'
         Flags:
-            -
-                Name: StartingBegin
+            -   Name: StartingBegin
                 Off: ~c~b
                 On: ~C~b
                 OnMatch: ConversationStartingBegin\(\) enter
                 OffMatch: ConversationStartingBegin\(\) leave
-            -
-                Name: StartingEnd
+
+            -   Name: StartingEnd
                 Off: ~c~e
                 On: ~C~e
                 OnMatch: ConversationStartingEnd\(\) enter
                 OffMatch: ConversationStartingEnd\(\) leave
-            -
-                Name: InConversation
+
+            -   Name: InConversation
                 Off: ~B~C
                 OffMatch: ConversationEndingEnd\(\) leave
                 TransitionToOff: '#B#~Y~C'
@@ -808,69 +810,67 @@ FlagSets:
                 TransitionToOnMatch: ConversationStartingBegin\(\) enter
                 On: ~Y~C
                 OnMatch: ConversationStartingEnd\(\) leave
-            -
-                Name: EndingBegin
+
+            -   Name: EndingBegin
                 Off: ~m~b
                 On: ~M~b
                 OnMatch: ConversationEndingBegin\(\) enter
                 OffMatch: ConversationEndingBegin\(\) leave
-            -
-                Name: EndingEnd
+
+            -   Name: EndingEnd
                 Off: ~m~e
                 On: ~M~e
                 OnMatch: ConversationEndingEnd\(\) enter
                 OffMatch: ConversationEndingEnd\(\) leave
     -   Name: Recording
         Flags:
-            -
-                Name: CanRecord
+            -   Name: CanRecord
                 Off: ~r~r
                 On: ~g~r
                 OffMatch: CanStartRecording conclusion:.+?canRec:False
                 OnMatch: CanStartRecording conclusion:.+?canRec:True
-            -
-                Name: WantRecording
+
+            -   Name: WantRecording
                 Off: ~r~R
                 On: ~G~R
                 OffMatch: \bStopping Recording\b|ConversationEndingBegin
                 OnMatch: \bStarting Recording\b
-            -
-                Name: IsRecording
+
+            -   Name: IsRecording
                 Off: '#K#~R~r'
                 On: '#K#~G~r'
                 OffMatch: CanStartRecording conclusion:.+?isRec:False
                 OnMatch: CanStartRecording conclusion:.+?isRec:True
-            -
-                Name: ActiveRecording
+
+            -   Name: ActiveRecording
                 Off: '#K#A'
                 On: '#K#~Y~A'
                 OffMatch: CanStartRecording conclusion:.+?hasActiveRec:False
                 OnMatch: CanStartRecording conclusion:.+?hasActiveRec:True
-            -
-                Name: CanRecordButton
+
+            -   Name: CanRecordButton
                 Off: R
                 On: ~G~R
                 OffMatch: 'CanStartRecording conclusion: False'
                 OnMatch: 'CanStartRecording conclusion: True'
                 InitialState: On
-            -
-                Name: CanStopButton
+
+            -   Name: CanStopButton
                 Off: S
                 On: ~G~S
                 OffMatch: 'CanStopRecording conclusion: False'
                 OnMatch: 'CanStopRecording conclusion: True'
     -   Name: MeetingTimer
         Flags:
-            -
-                Name: ActiveBooked
+            -   Name: ActiveBooked
                 On: ~g~B
                 Off: ~K~B
                 TransitionToOn: ~R~B
                 OnMatch: 'ConsoleManager.+?active=\{.+hasAC=True\r?$'
                 TransitionToOnMatch: 'ConsoleManager.+?active=,.+hasAC=True\r?$'
                 OffMatch: 'ConsoleManager.+hasAC=False\r?$|ConversationEndingBegin'
-            -
-                Name: ActiveMatch
+
+            -   Name: ActiveMatch
                 TransitionToOnMatch: ConsoleManager|ConversationEndingBegin
                 OnMatch: |
                     (?x)
@@ -911,16 +911,16 @@ FlagSets:
                     - { When: 'activeID == currentID', Output: ~G~= }
                     - { When: 'activeID == nextID', Output: ~M~= }
                     - { When: 'Else', Output: ~K~! }
-            -
-                Name: ActiveBooking
+
+            -   Name: ActiveBooking
                 Off: ~K~A
                 On: ~Y~A
                 TransitionToOn: '~y~#y#a'
                 OffMatch: 'ConsoleManager +. active=,|ConversationEndingBegin'
                 OnMatch: 'ConsoleManager +. active=\{.+?IsAdhoc=False'
                 TransitionToOnMatch: 'ConsoleManager +. active=\{.+?IsAdhoc=True'
-            -
-                Name: ActiveTime
+
+            -   Name: ActiveTime
                 TransitionToOnMatch: ConsoleManager|ConversationEndingBegin
                 OnMatch: |
                     (?x)
@@ -949,16 +949,16 @@ FlagSets:
                     - { When: 'now >= start && now <= end', Output: ~Y~= }
                     - { When: 'now < start', Output: ~Y~> }
                     - { When: 'Else', Output: ~K~. }
-            -
-                Name: CurrentBooking
+
+            -   Name: CurrentBooking
                 Off: ~K~C
                 On: ~G~C
                 TransitionToOn: '~G~#y#c'
                 OffMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=,|ConversationEndingBegin'
                 OnMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=\{.+?IsAdhoc=False'
                 TransitionToOnMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=\{.+?IsAdhoc=True'
-            -
-                Name: CurrentTime
+
+            -   Name: CurrentTime
                 TransitionToOnMatch: ConsoleManager|ConversationEndingBegin
                 OnMatch: |
                     (?x)
@@ -989,16 +989,16 @@ FlagSets:
                     - { When: 'now >= start && now <= end', Output: ~G~= }
                     - { When: 'now < start', Output: ~G~> }
                     - { When: 'Else', Output: ~K~. }
-            -
-                Name: NextBooking
+
+            -   Name: NextBooking
                 Off: ~K~N
                 On: ~M~N
                 TransitionToOn: '~m~#y#n'
                 OffMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=(\{.+?)?, nextScheduled=[^{]|ConversationEndingBegin'
                 OnMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=(\{.+?)?, nextScheduled=\{.+?IsAdhoc=False'
                 TransitionToOnMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=(\{.+?)?, nextScheduled=\{.+?IsAdhoc=True'
-            -
-                Name: NextTime
+
+            -   Name: NextTime
                 TransitionToOnMatch: ConsoleManager|ConversationEndingBegin
                 OnMatch: |
                     (?x)
@@ -1040,8 +1040,7 @@ FlagSets:
                 OffMatch: HostingRequestFinishedLog
     -   Name: Counter
         Flags:
-            -
-                Name: Count
+            -   Name: Count
                 TransitionToOnMatch: '{[A-Za-z0-9_]+} ?/ ?{[A-Za-z0-9_]+}|Finished'
                 OnMatch: '{(?<pos>[A-Za-z0-9_]+)} ?/ ?{(?<count>[A-Za-z0-9_]+)}.+?"\k<pos>":(?<num>\d+), ?"\k<count>":(?<total>\d+)'
                 Types:
@@ -1063,8 +1062,8 @@ FlagSets:
                     - { When: 'num < total * 0.9',  OutputCode: '~c~{num}~w~/~c~{total}' }
                     - { When: 'num >= total * 0.9', OutputCode: '~C~{num}~w~/~C~{total}' }
                     - { When: Else,                 OutputCode: '~k~#K#{total}' }
-            -
-                Name: CountGraph
+
+            -   Name: CountGraph
                 TransitionToOnMatch: '{[A-Za-z0-9_]+} ?/ ?{[A-Za-z0-9_]+}|Finished'
                 OnMatch: '{(?<pos>[A-Za-z0-9_]+)} ?/ ?{(?<count>[A-Za-z0-9_]+)}.+?"\k<pos>":(?<num>\d+), ?"\k<count>":(?<total>\d+)'
                 Types:
@@ -1109,8 +1108,8 @@ FlagSets:
                     - { When: 'num < total * 0.9',  OutputCode: '~c~{display}' }
                     - { When: 'num >= total * 0.9', OutputCode: '~C~{display}' }
                     - { When: Else,                 Output: '~k~#K#-' }
-            -
-                Name: CountPercent
+
+            -   Name: CountPercent
                 TransitionToOnMatch: '{[A-Za-z0-9_]+} ?/ ?{[A-Za-z0-9_]+}|Finished'
                 OnMatch: '{(?<pos>[A-Za-z0-9_]+)} ?/ ?{(?<count>[A-Za-z0-9_]+)}.+?"\k<pos>":(?<num>\d+), ?"\k<count>":(?<total>\d+)'
                 Types:
@@ -1142,18 +1141,18 @@ FlagSets:
                     - { When: 'num < total * 0.9',  OutputCode: '~c~{(num*100.0/total).ToString(PREC)}%' }
                     - { When: 'num >= total * 0.9', OutputCode: '~C~{(num*100.0/total).ToString(PREC)}%' }
                     - { When: Else,                 OutputCode: '100%' }
-            -
-                Name: RecordAge
+
+            -   Name: RecordAge
                 TransitionToOnMatch: '(?:Last)?(Modified|Updated?)(?:Date)?'
                 OnMatch: '"(?:Last)?(Modified|Updated?)(?:Date)?":"(?<datetime>[\d-]+T[\d:]+Z)",'
                 Types:
                     datetime: DateTimeOffset
                 Evals:
                     - { When: true, OutputCode: '~w~{DateTimeOffset.UtcNow - datetime}'}
+
     -   Name: GitAll
         Flags:
-            -
-                Name: Stage
+            -   Name: Stage
                 TransitionToOnMatch: '^/.+ ~\r?$|%|^~'
                 OnMatch: '^/.+/(?<dir>[^/]+) ~\r?$|(?<pc>\d+)%|^(?<gap>~)'
                 Types:
@@ -1169,6 +1168,7 @@ FlagSets:
                     -   Name: C
                         Type: int
                         Code: 'int.TryParse(pc, out var x) ? x/10 : 0'
+
                     -   Name: HC
                         Type: int
                         Code: Math.Max(0, 10-C)
@@ -1195,6 +1195,473 @@ FlagSets:
                     - { When: 'state == 1',                 OutputCode: '#b#~G~ Pull ~Y~{count,2}~w~/~M~{max,2}' }
                     - { When: 'state == 2',                 OutputCode: '#b#~R~   GC ~Y~{count,2}~w~/~M~{max,2}' }
 
+# Shared chunks of stuff:
+__shared:
+    DateVars: &DateVars
+        DateDash:           ''
+        DateYear:           '~BLUE~#BLACK#'
+        DateMonth:          ''
+        DateDay:            ''
+        DateSuffixSpace:    ''
+        TimeColon:  ''
+        TimeHours:  ~CYAN~
+        TimeMins:   ''
+        TimeSecs:   '#yellow#'
+        TimeDot:    '#BLACK#'
+        TimeSecsDiv10: ~WHITE~
+        TimeSecsDiv100: '#black#'
+        TimeSecsDiv1000: ~white~
+        TimeSecsDiv10000: ~BLACK~
+        TimeSecsDiv100000: ~yellow~
+        TimeSecsDiv1000000: ~green~
+        TimeSecsDiv10000000: ~blue~
+
+    LevelVars: &LevelVars
+        Trace:  '~BLACK~#b#'
+        Debug:  '~white~#B#'
+        Info:   '~WHITE~#K#'
+        Warn:   '~YELLOW~#y#'
+        Error:  '~RED~#y#'
+        Fatal:  '~WHITE~#RED#'
+
+    ExceptionVars: &ExceptionVars
+        ExceptionNamespace:     '~magenta~#black#'
+        ExceptionClass:         '~CYAN~#magenta#'
+        # And the space after it:
+        ExceptionColon:         '~white~#yellow#'
+        ExceptionMessage:       '~YELLOW~#red#'
+        # Includes the spaces either side:
+        InnerExceptionArrow:    '#black# ~RED~-#BLACK#-#white#-#WHITE#>#black# '
+
+    StackTraceVars: &StackTraceVars
+        StackTraceAt:                   '~MAGENTA~#magenta#'
+        StackTraceNamespace:            ~BLACK~
+        StackTraceNamespaceDot:         ~white~
+        StackTraceClass:                ~GREEN~
+        StackTraceMember:               ~YELLOW~
+        StackTraceArgsPunctuation:      ~BLUE~
+        StackTraceArgsTypes:            ~cyan~
+        StackTraceArgsNames:            ~yellow~
+        StackTraceDetailsIn:            ~BLACK~
+        StackTraceDetailsPath:          ~green~
+        StackTraceDetailsPathSlash:     ~BLACK~
+        StackTraceDetailsDir:           ~GREEN~
+        StackTraceDetailsFilename:      ~YELLOW~
+        StackTraceDetailsColon:         ~BLACK~
+        StackTraceDetailsLine:          ''
+        StackTraceDetailsLineNumber:    ~CYAN~
+        StackTraceDetailsCol:           ''
+        StackTraceDetailsColNumber:     ~cyan~
+
+    JSONVars: &JSONVars
+        JSONIndent:     '   '
+        JSONNewline:    '\n'
+        JSONProp:       ~y~
+        JSONColon:      '~Y~: '
+        JSONComma:      '~r~,'
+        JSONBrace:      ~m~
+        JSONBracket:    ~c~
+        JSONString:     ~w~
+        JSONBool:       ~C~
+        JSONInt:        ~B~
+        JSONFloat:      '#b#~c~'
+        JSONNull:       '#b#~R~'
+        JSONUndefined:  '#r#~B~'
+
+    CommonVars: &CommonVars
+        <<: [*DateVars, *LevelVars]
+
+    ExceptionWithStackTraceVars: &ExceptionWithStackTraceVars
+        <<: [*ExceptionVars, *StackTraceVars]
+
+    AllVars: &AllVars
+        <<: [*CommonVars, *ExceptionWithStackTraceVars, *JSONVars]
+
+    DateRules:
+        - Name: Full ISO DateTime 7DP
+          Match: &ISODateRegexF7 '^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d)(\d)(\d)(\d)(\d)(\d)(\d)'
+          Replace: &ISODateReplaceF7 '%DateYear%$1%DateDash%-%DateMonth%$2%DateDash%-%DateDay%$3%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9%TimeSecsDiv10000%$10%TimeSecsDiv100000%$11%TimeSecsDiv1000000%$12%TimeSecsDiv10000000%$13'
+
+        - Name: Full ISO DateTime 4DP
+          Match: &ISODateRegexF4 '^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d)(\d)(\d)(\d)'
+          Replace: &ISODateReplaceF4 '%DateYear%$1%DateDash%-%DateMonth%$2%DateDash%-%DateDay%$3%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9%TimeSecsDiv10000%$10'
+
+        - Name: Full ISO DateTime 3DP UTC
+          Match: &ISODateRegexF3 '^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d)(\d)(\d)Z'
+          Replace: &ISODateReplaceF3 '%DateYear%$1%DateDash%-%DateMonth%$2%DateDash%-%DateDay%$3%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9%TimeSecsDiv10000%Z'
+
+    ExceptionStackTraceRules: &ExceptionStackTraceRules
+        -   Name: C# Exception Stack Trace
+            Match: &CSExceptionRegex '(?s).+'
+            Replace: &CSExceptionReplace \n$0\n
+            Groups: &CSExceptionGroups
+                -   Name: 0.Exception
+                    Test: Exception\b
+                    Match: |
+                        (?x)                                # IgnorePatternWhitespace
+                        (?<namespace>                       # Named group 'namespace' is:
+                            (?:                                 # ZeroOrMore(greed0:
+                                (?>                             # Atomic group:
+                                    [\w{}'$]+                       # OneOrMore(greedy): Any word character or '{' or '}' or ' or '$'
+                                )
+                                \.                              # '.'
+                            )*
+                        )
+                        (?<class>                           # Named group 'class' is:
+                            \w*                                 # ZeroOrMore(greedy): Any word character
+                            Exception                           # 'Exception'
+                            \b                                  # Zero-width word-boundary assertion.
+                            [^:. ]*                             # ZeroOrMore(greedy): Not ':' nor '.' nor ' '
+                        )
+                        (?<colon>                           # Named group 'colon' is:
+                                \.                              # Either: '.'
+                            |                                   # Or:
+                                (?:                                 # Optional(greedy):
+                                    \ \(0x                              # ' (0x'
+                                    [\dA-Fa-f]{8}                       # Exactly 8 hex digits
+                                    \)                                  # ')'
+                                )?
+                                :[ ]                                # ': '
+                        )
+                        (?<message>                         # Optional(greedy): Named group 'message' is:
+                            .+                                  # OneOrMore(greedy): anything except newlines
+                        )?
+                    Replace: '%ExceptionNamespace%${namespace}%ExceptionClass%${class}%ExceptionColon%${colon}%ExceptionMessage%${message}'
+                    Groups:
+                        # 2 modifications to the same group need unique IDs so we .suffix them:
+                        -   Name: message.0
+                            Match: |
+                                (?x)
+                                (?<namespace>                       # Named group 'namespace' is:
+                                    (?:                                 # ZeroOrMore(greed0:
+                                        (?>                             # Atomic group:
+                                            [\w{}'$]+                       # OneOrMore(greedy): Any word character or '{' or '}' or ' or '$'
+                                        )
+                                        \.                              # '.'
+                                    )*
+                                )
+                                (?<class>                           # Named group 'class' is:
+                                    \w*                                 # ZeroOrMore(greedy): Any word character
+                                    Exception                           # 'Exception'
+                                    [^:. ]*                             # ZeroOrMore(greedy): Not ':' nor '.' nor ' '
+                                )
+                                (?<colon>                           # Named group 'colon' is:
+                                        \.                              # Either: '.'
+                                    |                                   # Or:
+                                        (?:                                 # Optional(greedy):
+                                            \ \(0x                              # ' (0x'
+                                            [\dA-Fa-f]{8}                       # Exactly 8 hex digits
+                                            \)                                  # ')'
+                                        )?
+                                        :[ ]                                # ': '
+                                )
+                            Replace: '%ExceptionNamespace%${namespace}%ExceptionClass%${class}%ExceptionColon%${colon}'
+                                    
+                        -   Name: message.1
+                            Match: ' ?---> '
+                            Replace: '%InnerExceptionArrow%'
+
+                -   Name: 0.ExceptionHilight
+                    Match: Exception
+                    Replace: '#M#$0'
+
+                -   Name: 0.StackTrace
+                    Test: '(?m)(?:^|Current Stack: )   (?:at |--- End of inner)'
+                    Match: |
+                        (?mx)                           # MultiLine, IgnorePatternWhitespace
+                        (?:^|Current\ Stack:\ )         # StartOfLine or 'Current Stack: '
+                        (?<at>                          # Named group 'at' is:
+                            \ {3}                           # 3 spaces (note that in (?x) mode, significant WS must be escaped)
+                            (?:                             # Either:
+                                    at[ ]                       # 'at ' (see above re WS)
+                                |                           # Or:
+                                    ---                         # '---'
+                                    .+                          # OneOrMore(greedy) anything except newlines (i.e. the rest of the line)
+                            )
+                        )
+                        (?:                             # Optional(greedy):
+                            (?<namespace>                   # Named group 'namespace' is:
+                                (?:                             # ZeroOrMore(greedy):
+                                    (?>                             # Atomic group: (no backtracking into this - all or nothing; used for failing match efficiency)
+                                        [^().]+                         # OneOrMore(greedy): Not '(' nor ')' nor '.'
+                                    )
+                                    \.                              # '.'
+                                )*
+                            )
+                            (?<class>                       # Named group 'class' is:
+                                (?>                             # Atomic group:
+                                    [^().]+                         # OneOrMore(greedy): Not '(' nor ')' nor '.'
+                                )
+                                \.                              # '.'
+                            )
+                            (?<member>                      # Named group 'member' is:
+                                    \.ctor                      # Either: '.ctor'
+                                |                               # Or:
+                                    (?>                             # Atomic group:
+                                        [^().]+                         # OneOrMore(greedy): Not '(' nor ')' nor '.'
+                                    )
+                            )
+                            (?<args>                        # Named group 'args' is:
+                                \(                              # '('
+                                (?>                             # Atomic group:
+                                    [^)]*                           # ZeroOrMore(greedy): Not ')'
+                                )
+                                \)                              # ')'
+                            )
+                            (?<details>                     # Optional(greedy): Named group 'details' is:
+                                \ in[ ]                         # ' in '
+                                .+                              # OneOrMore(greedy): anything except newlines
+                                :line[ ]                        # ':line '
+                                \d+                             # OneOrMore(greedy): digits
+                            )?
+                        )?
+                    Replace: '%StackTraceAt%${at}%StackTraceNamespace%${namespace}%StackTraceClass%${class}%StackTraceMember%${member}%StackTraceArgsPunctuation%${args}${details}'
+                    Groups:
+                        -   Name: namespace.0
+                            Match: ^Resideo
+                            Replace: ~W~$0
+
+                        -   Name: namespace.1
+                            Match: ^System\b
+                            Replace: ~B~$0
+
+                        -   Name: namespace.2
+                            Match: \.
+                            Replace: '%StackTraceNamespaceDot%.'
+
+                        -   Name: args
+                            Match: |
+                                (?x)                            # IgnorePatternWhitespace
+                                (?<type>                        # Named group 'type' is:
+                                    [^(]+?                          # OneOrMore(ungreedy): Not '('
+                                )
+                                \s                              # Whitespace
+                                (?<name>                        # Named group 'name' is:
+                                    [^\s,)]+                        # OneOrMore(greedy): Not whitespace nor ',' nor ')'
+                                )
+                                (?=                             # Followed by (zero-length positive lookahead)
+                                        ,                           # Either: ','
+                                    |                               # Or:
+                                        \)                              # ')'
+                                )
+                            Replace: '%StackTraceArgsTypes%${type} %StackTraceArgsNames%${name}'
+
+                        -   Name: details
+                            Match: |
+                                (?x)                            # IgnorePatternWhitespace
+                                in[ ]                           # 'in '
+                                (?<path>                        # Named group 'path' is:
+                                    .{4}                            # Exactly 4: anything except newlines (to skip over drivename colon complications)
+                                    [^:]+                           # OneOrMore(greedy): Not ':'
+                                    [/\\]                           # '/' or '\'
+                                )
+                                (?<file>                        # Named group 'file' is:
+                                    [^/\\:]+                        # OneOrMore(greedy): Not: '/' nor '\' nor ':'
+                                )
+                                :line[ ]                        # ':line '
+                                (?<line>                        # Named group 'line' is:
+                                    \d+                             # OneOrMore(greedy): digits
+                                )
+                            Replace: '%StackTraceDetailsIn%in %StackTraceDetailsPath%${path}%StackTraceDetailsFilename%${file}%StackTraceDetailsColon%:%StackTraceDetailsLine%line %StackTraceDetailsLineNumber%${line}'
+                            Groups:
+                                -   Name: path
+                                    Match: |
+                                        (?x)                            # IgnorePatternWhitespace
+                                        ^                               # StartOfLine (in this case, the start of the group's match)
+                                        (?<path>                        # Named group 'path' is:
+                                            (?:                             # OneOrMore(greedy):
+                                                (?>                             # Atomic group:
+                                                    [^/\\]+                         # OneOrMore(greedy): Not '/' nor '\'
+                                                )
+                                                [/\\]                           # '/' or '\'
+                                            )+
+                                        )
+                                        (?<dir>                         # Named group 'dir' is:
+                                            (?>                             # Atomic group:
+                                                [^/\\]+                         # OneOrMore(greedy): Not '/' nor '\'
+                                            )
+                                            [/\\]                           # '/' or '\'
+                                        )
+                                        $                                   # EndOfLine (in this case, the end of the group's match)
+                                    Replace: '${path}%StackTraceDetailsDir%${dir}'
+                                    Groups:
+                                        -   Name: path
+                                            Match: '[/\\]'
+                                            Replace: '%StackTraceDetailsPathSlash%$0'
+
+                                        -   Name: dir
+                                            Match: '[/\\]'
+                                            Replace: '%StackTraceDetailsPathSlash%$0'
+
+        -   Name: JS Error Stack Trace
+            Match: &JSErrorRegex '(?s).+'
+            Replace: &JSErrorReplace \n$0\n
+            Groups: &JSErrorGroups
+                -   Name: 0.Error
+                    Test: Error\b
+                    Match: |
+                        (?x)                                # IgnorePatternWhitespace
+                        (?<namespace>                       # Named group 'namespace' is:
+                            (?:                                 # ZeroOrMore(greed0:
+                                (?>                             # Atomic group:
+                                    [\w{}'$]+                       # OneOrMore(greedy): Any word character or '{' or '}' or ' or '$'
+                                )
+                                \.                              # '.'
+                            )*
+                        )
+                        (?<class>                           # Named group 'class' is:
+                            \w*                                 # ZeroOrMore(greedy): Any word character
+                            Error                           # 'Error'
+                            \b                                  # Zero-width word-boundary assertion.
+                            [^:. ]*                             # ZeroOrMore(greedy): Not ':' nor '.' nor ' '
+                        )
+                        (?<colon>                           # Named group 'colon' is:
+                                \.                              # Either: '.'
+                            |                                   # Or:
+                                (?:                                 # Optional(greedy):
+                                    \ \(0x                              # ' (0x'
+                                    [\dA-Fa-f]{8}                       # Exactly 8 hex digits
+                                    \)                                  # ')'
+                                )?
+                                :[ ]                                # ': '
+                        )
+                        (?<message>                         # Optional(greedy): Named group 'message' is:
+                            (?:\\[^n]|[^\\]+)+                  # OneOrMore(greedy): anything except newlines or escaped newlines
+                        )?
+                    Replace: '%ExceptionNamespace%${namespace}%ExceptionClass%${class}%ExceptionColon%${colon}%ExceptionMessage%${message}'
+                    Groups:
+                        # 2 modifications to the same group need unique IDs so we .suffix them:
+                        -   Name: message.0
+                            Match: |
+                                (?x)
+                                (?<namespace>                       # Named group 'namespace' is:
+                                    (?:                                 # ZeroOrMore(greed0:
+                                        (?>                             # Atomic group:
+                                            [\w{}'$]+                       # OneOrMore(greedy): Any word character or '{' or '}' or ' or '$'
+                                        )
+                                        \.                              # '.'
+                                    )*
+                                )
+                                (?<class>                           # Named group 'class' is:
+                                    \w*                                 # ZeroOrMore(greedy): Any word character
+                                    Error                           # 'Error'
+                                    [^:. ]*                             # ZeroOrMore(greedy): Not ':' nor '.' nor ' '
+                                )
+                                (?<colon>                           # Named group 'colon' is:
+                                        \.                              # Either: '.'
+                                    |                                   # Or:
+                                        (?:                                 # Optional(greedy):
+                                            \ \(0x                              # ' (0x'
+                                            [\dA-Fa-f]{8}                       # Exactly 8 hex digits
+                                            \)                                  # ')'
+                                        )?
+                                        :[ ]                                # ': '
+                                )
+                            Replace: '%ExceptionNamespace%${namespace}%ExceptionClass%${class}%ExceptionColon%${colon}'
+
+                -   Name: 0.ErrorHilight
+                    Match: Error
+                    Replace: '#M#$0'
+
+                -   Name: 0.StackTrace
+                    Test: '(?m)(?:^|\\n)    ?(?:at )'
+                    Match: |
+                        (?mx)                           # MultiLine, IgnorePatternWhitespace
+                        (?<nl>^|\\n)                    # StartOfLine
+                        (?<at>                          # Named group 'at' is:
+                            \ {3,4}                         # 3 or 4 spaces (note that in (?x) mode, significant WS must be escaped)
+                            (?:                             # Either:
+                                    at[ ]                       # 'at ' (see above re WS)
+                            )
+                        )
+                        (?:                             # Optional(greedy):
+                            (?<namespace>               # Named group 'namespace' is:
+                                    <anonymous>
+                                |
+                                    (?:                         # ZeroOrMore(greedy):
+                                        (?>                         # Atomic group: (no backtracking into this - all or nothing; used for failing match efficiency)
+                                            [^().]+                     # OneOrMore(greedy): Not '(' nor ')' nor '.'
+                                        )
+                                        \.                          # '.'
+                                    )*
+                            )?
+                            (?<class>                       # Named group 'class' is:
+                                (?>                             # Atomic group:
+                                    [^().]+                         # OneOrMore(greedy): Not '(' nor ')' nor '.'
+                                )
+                                \.                              # '.'
+                            )?
+                            (?<member>                      # Named group 'member' is:
+                                    \.ctor                      # Either: '.ctor'
+                                |                               # Or:
+                                    (?>                             # Atomic group:
+                                        [^:().]+                        # OneOrMore(greedy): Not '(' nor ')' nor '.'
+                                    )
+                            )?
+                            (?<args>                        # Named group 'args' is:
+                                \(                              # '('
+                                (?>                             # Atomic group:
+                                    [^)]*                           # ZeroOrMore(greedy): Not ')'
+                                )
+                                \)                              # ')'
+                            )?
+                            (?<details>                     # Optional(greedy): Named group 'details' is:
+                                :
+                                \d+                             # OneOrMore(greedy): digits
+                                (?:
+                                    :
+                                    \d+                             # OneOrMore(greedy): digits
+                                )?
+                            )?
+                        )?
+                    Replace: '${nl}%StackTraceAt%${at}%StackTraceNamespace%${namespace}%StackTraceClass%${class}%StackTraceMember%${member}%StackTraceArgsPunctuation%${args}${details}'
+                    Groups:
+                        -   Name: namespace.0
+                            Match: ^Resideo
+                            Replace: ~W~$0
+
+                        -   Name: namespace.1
+                            Match: ^System\b
+                            Replace: ~B~$0
+
+                        -   Name: namespace.2
+                            Match: \.
+                            Replace: '%StackTraceNamespaceDot%.'
+
+                        -   Name: args
+                            Match: |
+                                (?x)                            # IgnorePatternWhitespace
+                                (?<type>                        # Named group 'type' is:
+                                    [^(]+?                          # OneOrMore(ungreedy): Not '('
+                                )
+                                \s                              # Whitespace
+                                (?<name>                        # Named group 'name' is:
+                                    [^\s,)]+                        # OneOrMore(greedy): Not whitespace nor ',' nor ')'
+                                )
+                                (?=                             # Followed by (zero-length positive lookahead)
+                                        ,                           # Either: ','
+                                    |                               # Or:
+                                        \)                              # ')'
+                                )
+                            Replace: '%StackTraceArgsTypes%${type} %StackTraceArgsNames%${name}'
+
+                        -   Name: details
+                            Match: ':\d+(?::\d+)'
+                            Replace: '$0'
+                            Groups:
+                                -   Name: 0.line
+                                    Match: '^:(\d+)'
+                                    Replace: ':%StackTraceDetailsLineNumber%$1'
+
+                                -   Name: 0.col
+                                    Match: '^([^:]*:[^:]+:)(\d+)'
+                                    Replace: '$1%StackTraceDetailsColNumber%$2'
+
+                                -   Name: 0.colon
+                                    Match: ':'
+                                    Replace: '%StackTraceDetailsColon%:'
+
+
 #
 RuleSets:
     #-  Name: Name
@@ -1205,417 +1672,217 @@ RuleSets:
     #       name: value
     #
     #   Rules:
-    #       -
-    #           Name: Name
+    #       -   Name: Name
     #           #Test: Regex
     #           Match: RegexProbablyUsingGroups
     #           #Parse: JSON|Parent
     #           Replace: replaceStrMaybeUsing%var%s
     #           #Repeat: true
+    #           #Push: false
     #           #Groups:
     #               #repeat Rule structure recursively where names are prefixed with the group to work on.
     -   Name: SeriLog
         Reset: Application is shutting down
-        Vars:
-            DateDash:           ''
-            DateYear:           '~BLUE~#BLACK#'
-            DateMonth:          ''
-            DateDay:            ''
-            DateSuffixSpace:    ''
-            TimeColon:  ''
-            TimeHours:  ~CYAN~
-            TimeMins:   ''
-            TimeSecs:   '#yellow#'
-            TimeDot:    '#BLACK#'
-            TimeSecsDiv10: ~WHITE~
-            TimeSecsDiv100: '#black#'
-            TimeSecsDiv1000: ~white~
-            TimeSecsDiv10000: ~BLACK~
-            TimeSecsDiv100000: ~yellow~
-            TimeSecsDiv1000000: ~green~
-            TimeSecsDiv10000000: ~blue~
+        Vars: *AllVars
 
-            Trace:  '~BLACK~#b#'
-            Debug:  '~white~#B#'
-            Info:   '~WHITE~#K#'
-            Warn:   '~YELLOW~#y#'
-            Error:  '~RED~#y#'
-            Fatal:  '~WHITE~#RED#'
-
-            ExceptionNamespace:     '~magenta~#black#'
-            ExceptionClass:         '~CYAN~#magenta#'
-            # And the space after it:
-            ExceptionColon:         '~white~#yellow#'
-            ExceptionMessage:       '~YELLOW~#red#'
-            # Includes the spaces either side:
-            InnerExceptionArrow:    '#black# ~RED~-#BLACK#-#white#-#WHITE#>#black# '
-
-            # Includes the spaces either side, as well as the EndOfInnerException marker line:
-            StackTraceAt:                   '~MAGENTA~#magenta#'
-            StackTraceNamespace:            ~BLACK~
-            StackTraceNamespaceDot:         ~white~
-            StackTraceClass:                ~GREEN~
-            StackTraceMember:               ~YELLOW~
-            StackTraceArgsPunctuation:      ~BLUE~
-            StackTraceArgsTypes:            ~cyan~
-            StackTraceArgsNames:            ~yellow~
-            StackTraceDetailsIn:            ~BLACK~
-            StackTraceDetailsPath:          ~green~
-            StackTraceDetailsPathSlash:     ~BLACK~
-            StackTraceDetailsDir:           ~GREEN~
-            StackTraceDetailsFilename:      ~YELLOW~
-            StackTraceDetailsColon:         ~BLACK~
-            StackTraceDetailsLine:          ''
-            StackTraceDetailsLineNumber:    ~CYAN~
-
-            JSONIndent:     '   '
-            JSONProp:       ~y~
-            JSONColon:      ~Y~
-            JSONComma:      ~r~
-            JSONBrace:      ~m~
-            JSONBraket:     ~c~
-            JSONString:      ~g~
-            JSONBool:       ~B~
-            JSONInt:        ~B~
-            JSONFloat:      '#b#~c~'
-            JSONNull:       '#b#~R~'
-            JSONUndefined:  '#r#~B~'
         Rules:
-            -
-                Name: ContainerPrefix
+            -   Name: ContainerPrefix
                 Match: ^([A-Za-z\d_-]+)\s+\|\s+(\{.+)}$
                 Replace: '$2,"__container":"$1"}'
-            -
-                Name: Trace
+
+            -   Name: Trace
                 Test: '"@l":"Trace|Verbose"'
                 Match: '(?<="@mt":")'
                 Replace: '%Trace% [TRACE] '
-            -
-                Name: Debug
+            
+            -   Name: Debug
                 Test: '"@l":"Debug"'
                 Match: '(?<="@mt":")'
                 Replace: '%Debug% [DEBUG] '
-            -
-                Name: Info
+            
+            -   Name: Info
                 #Test: '"@l":"Info(?:rmation)?"'
                 Test: '^(?!.*"@l":").+'
                 Match: (?<="@mt":")
                 Replace: '%Info% [ INFO] '
-            -
-                Name: Warn
+            
+            -   Name: Warn
                 Test: '"@l":"Warn(?:ing)?"'
                 Match: (?<="@mt":")
                 Replace: '%Warn% [WARN ] '
-            -
-                Name: Error
+            
+            -   Name: Error
                 Test: '"@l":"Error"'
                 Match: (?<="@mt":")
                 Replace: '%Error% [ERROR] '
-            -
-                Name: Fatal
+            
+            -   Name: Fatal
                 Test: '"@l":"Fatal"'
                 Match: (?<="@mt":")
                 Replace: '%Fatal% [FATAL] '
 
-            -
-                Name: json
+            -   Name: json
                 Match: '^(?:~[^~]+~|#[^#]+#)*(?:\{?"|(?<dockerPrefix>[a-z0-9-]+ +\| +))?(?<JSON>\{\S.+})(?:~[^~]+~|#[^#]+#)*$'
                 Parse: JSON
                 Replace: '~<~~B~${JSON.read(@t)} ~>~${JSON.read(@mt)}${JSON.read?(@x)}${JSON.unread()}'
                 Groups:
-                    -
-                        Name: '@t'
-                        Match: '^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d)(\d)(\d)(\d)(\d)(\d)(\d)'
-                        Replace: '%DateYear%$1%DateDash%-%DateMonth%$2%DateDash%-%DateDay%$3%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9%TimeSecsDiv10000%$10%TimeSecsDiv100000%$11%TimeSecsDiv1000000%$12%TimeSecsDiv10000000%$13'
-                    -
-                        Name: '@mt'
+                    -   Name: '@t'
+                        Match: *ISODateRegexF7
+                        Replace: *ISODateReplaceF7
+                    
+                    -   Name: '@mt'
                         Match: '\{(?<prop>[^}]+)}'
                         Parse: Parent
                         Replace: '~<~~Y~#<##b#${prop}#>#~G~:~Y~${JSON.read($prop)}~>~'
-                    -
-                        Name: '@x'
-                        Match: (?s).+
-                        Replace: \n$0\n
-                        Groups: &ExceptionStackTrace
-                            -
-                                Name: 0.Exception
-                                Test: Exception\b
-                                Match: |
-                                    (?x)                                # IgnorePatternWhitespace
-                                    (?<namespace>                       # Named group 'namespace' is:
-                                        (?:                                 # ZeroOrMore(greed0:
-                                            (?>                             # Atomic group:
-                                                [\w{}'$]+                       # OneOrMore(greedy): Any word character or '{' or '}' or ' or '$'
-                                            )
-                                            \.                              # '.'
-                                        )*
-                                    )
-                                    (?<class>                           # Named group 'class' is:
-                                        \w*                                 # ZeroOrMore(greedy): Any word character
-                                        Exception                           # 'Exception'
-                                        \b                                  # Zero-width word-boundary assertion.
-                                        [^:. ]*                             # ZeroOrMore(greedy): Not ':' nor '.' nor ' '
-                                    )
-                                    (?<colon>                           # Named group 'colon' is:
-                                            \.                              # Either: '.'
-                                        |                                   # Or:
-                                            (?:                                 # Optional(greedy):
-                                                \ \(0x                              # ' (0x'
-                                                [\dA-Fa-f]{8}                       # Exactly 8 hex digits
-                                                \)                                  # ')'
-                                            )?
-                                            :[ ]                                # ': '
-                                    )
-                                    (?<message>                         # Optional(greedy): Named group 'message' is:
-                                        .+                                  # OneOrMore(greedy): anything except newlines
-                                    )?
-                                Replace: '%ExceptionNamespace%${namespace}%ExceptionClass%${class}%ExceptionColon%${colon}%ExceptionMessage%${message}'
-                                Groups:
-                                    # 2 modifications to the same group need unique IDs so we .suffix them:
-                                    -
-                                        Name: message.0
-                                        Match: |
-                                            (?x)
-                                            (?<namespace>                       # Named group 'namespace' is:
-                                                (?:                                 # ZeroOrMore(greed0:
-                                                    (?>                             # Atomic group:
-                                                        [\w{}'$]+                       # OneOrMore(greedy): Any word character or '{' or '}' or ' or '$'
-                                                    )
-                                                    \.                              # '.'
-                                                )*
-                                            )
-                                            (?<class>                           # Named group 'class' is:
-                                                \w*                                 # ZeroOrMore(greedy): Any word character
-                                                Exception                           # 'Exception'
-                                                [^:. ]*                             # ZeroOrMore(greedy): Not ':' nor '.' nor ' '
-                                            )
-                                            (?<colon>                           # Named group 'colon' is:
-                                                    \.                              # Either: '.'
-                                                |                                   # Or:
-                                                    (?:                                 # Optional(greedy):
-                                                        \ \(0x                              # ' (0x'
-                                                        [\dA-Fa-f]{8}                       # Exactly 8 hex digits
-                                                        \)                                  # ')'
-                                                    )?
-                                                    :[ ]                                # ': '
-                                            )
-                                        Replace: '%ExceptionNamespace%${namespace}%ExceptionClass%${class}%ExceptionColon%${colon}'
-                                    -
-                                        Name: message.1
-                                        Match: ' ?---> '
-                                        Replace: '%InnerExceptionArrow%'
-                            -
-                                Name: 0.ExceptionHilight
-                                Match: Exception
-                                Replace: '#M#$0'
+                    
+                    -   Name: '@x'
+                        Match: *CSExceptionRegex
+                        Replace: *CSExceptionReplace
+                        Groups: *CSExceptionGroups
 
-                            -
-                                Name: 0.StackTrace
-                                Test: '(?m)(?:^|Current Stack: )   (?:at |--- End of inner)'
-                                Match: |
-                                    (?mx)                           # MultiLine, IgnorePatternWhitespace
-                                    (?:^|Current\ Stack:\ )         # StartOfLine or 'Current Stack: '
-                                    (?<at>                          # Named group 'at' is:
-                                        \ {3}                           # 3 spaces (note that in (?x) mode, significant WS must be escaped)
-                                        (?:                             # Either:
-                                                at[ ]                       # 'at ' (see above re WS)
-                                            |                           # Or:
-                                                ---                         # '---'
-                                                .+                          # OneOrMore(greedy) anything except newlines (i.e. the rest of the line)
-                                        )
-                                    )
-                                    (?:                             # Optional(greedy):
-                                        (?<namespace>                   # Named group 'namespace' is:
-                                            (?:                             # ZeroOrMore(greedy):
-                                                (?>                             # Atomic group: (no backtracking into this - all or nothing; used for failing match efficiency)
-                                                    [^().]+                         # OneOrMore(greedy): Not '(' nor ')' nor '.'
-                                                )
-                                                \.                              # '.'
-                                            )*
-                                        )
-                                        (?<class>                       # Named group 'class' is:
-                                            (?>                             # Atomic group:
-                                                [^().]+                         # OneOrMore(greedy): Not '(' nor ')' nor '.'
-                                            )
-                                            \.                              # '.'
-                                        )
-                                        (?<member>                      # Named group 'member' is:
-                                                \.ctor                      # Either: '.ctor'
-                                            |                               # Or:
-                                                (?>                             # Atomic group:
-                                                    [^().]+                         # OneOrMore(greedy): Not '(' nor ')' nor '.'
-                                                )
-                                        )
-                                        (?<args>                        # Named group 'args' is:
-                                            \(                              # '('
-                                            (?>                             # Atomic group:
-                                                [^)]*                           # ZeroOrMore(greedy): Not ')'
-                                            )
-                                            \)                              # ')'
-                                        )
-                                        (?<details>                     # Optional(greedy): Named group 'details' is:
-                                            \ in[ ]                         # ' in '
-                                            .+                              # OneOrMore(greedy): anything except newlines
-                                            :line[ ]                        # ':line '
-                                            \d+                             # OneOrMore(greedy): digits
-                                        )?
-                                    )?
-                                Replace: '%StackTraceAt%${at}%StackTraceNamespace%${namespace}%StackTraceClass%${class}%StackTraceMember%${member}%StackTraceArgsPunctuation%${args}${details}'
-                                Groups:
-                                    -
-                                        Name: namespace.0
-                                        Match: ^Pushpay
-                                        Replace: ~W~$0
-                                    -
-                                        Name: namespace.1
-                                        Match: ^System\b
-                                        Replace: ~B~$0
-                                    -
-                                        Name: namespace.2
-                                        Match: \.
-                                        Replace: '%StackTraceNamespaceDot%.'
-                                    -
-                                        Name: args
-                                        Match: |
-                                            (?x)                            # IgnorePatternWhitespace
-                                            (?<type>                        # Named group 'type' is:
-                                                [^(]+?                          # OneOrMore(ungreedy): Not '('
-                                            )
-                                            \s                              # Whitespace
-                                            (?<name>                        # Named group 'name' is:
-                                                [^\s,)]+                        # OneOrMore(greedy): Not whitespace nor ',' nor ')'
-                                            )
-                                            (?=                             # Followed by (zero-length positive lookahead)
-                                                    ,                           # Either: ','
-                                                |                               # Or:
-                                                    \)                              # ')'
-                                            )
-                                        Replace: '%StackTraceArgsTypes%${type} %StackTraceArgsNames%${name}'
-                                    -
-                                        Name: details
-                                        Match: |
-                                            (?x)                            # IgnorePatternWhitespace
-                                            in[ ]                           # 'in '
-                                            (?<path>                        # Named group 'path' is:
-                                                .{4}                            # Exactly 4: anything except newlines (to skip over drivename colon complications)
-                                                [^:]+                           # OneOrMore(greedy): Not ':'
-                                                [/\\]                           # '/' or '\'
-                                            )
-                                            (?<file>                        # Named group 'file' is:
-                                                [^/\\:]+                        # OneOrMore(greedy): Not: '/' nor '\' nor ':'
-                                            )
-                                            :line[ ]                        # ':line '
-                                            (?<line>                        # Named group 'line' is:
-                                                \d+                             # OneOrMore(greedy): digits
-                                            )
-                                        Replace: '%StackTraceDetailsIn%in %StackTraceDetailsPath%${path}%StackTraceDetailsFilename%${file}%StackTraceDetailsColon%:%StackTraceDetailsLine%line %StackTraceDetailsLineNumber%${line}'
-                                        Groups:
-                                            -
-                                                Name: path
-                                                Match: |
-                                                    (?x)                            # IgnorePatternWhitespace
-                                                    ^                               # StartOfLine (in this case, the start of the group's match)
-                                                    (?<path>                        # Named group 'path' is:
-                                                        (?:                             # OneOrMore(greedy):
-                                                            (?>                             # Atomic group:
-                                                                [^/\\]+                         # OneOrMore(greedy): Not '/' nor '\'
-                                                            )
-                                                            [/\\]                           # '/' or '\'
-                                                        )+
-                                                    )
-                                                    (?<dir>                         # Named group 'dir' is:
-                                                        (?>                             # Atomic group:
-                                                            [^/\\]+                         # OneOrMore(greedy): Not '/' nor '\'
-                                                        )
-                                                        [/\\]                           # '/' or '\'
-                                                    )
-                                                    $                                   # EndOfLine (in this case, the end of the group's match)
-                                                Replace: '${path}%StackTraceDetailsDir%${dir}'
-                                                Groups:
-                                                    -
-                                                        Name: path
-                                                        Match: '[/\\]'
-                                                        Replace: '%StackTraceDetailsPathSlash%$0'
-                                                    -
-                                                        Name: dir
-                                                        Match: '[/\\]'
-                                                        Replace: '%StackTraceDetailsPathSlash%$0'
-            -
-                Name: env
+            -   Name: env
                 Match: '^((?:Hosting environment|Content root path): )(.+)'
                 Replace: '$1#b#~C~$2'
-            -
-                Name: listening
+
+            -   Name: listening
                 Match: '^(Now listening on: )(.+)'
                 Replace: '~G~$1#g#~C~$2'
-            -
-                Name: app
+
+            -   Name: app
                 Match: ^Application .+
                 Replace: ~Y~$0
-            -
-                Name: text
+
+            -   Name: text
                 Match: '(?s)^(?:~[^~]+~|#[^#]+#)*(?!\d{4}(?:-\d\d){2})[^{].+'
                 Replace: ~W~$0
+
+    -   Name: JSLog
+        Vars:
+            <<: *AllVars
+        Rules:
+            -   Name: Level
+                Match: '(?<=^\S+ )<(?<level>[^>]+)>(?= )'
+                Replace: '~K~<${level}~K~>'
+                Groups:
+                    -   Name: level.debug
+                        Match: 'debug'
+                        Replace: '%Trace%$0'
+
+                    -   Name: level.log
+                        Match: 'log'
+                        Replace: '%Debug% $0 '
+
+                    -   Name: level.info
+                        Match: 'info'
+                        Replace: '%Info% $0'
+
+                    -   Name: level.warn
+                        Match: 'warning'
+                        Replace: '%Warn% warn'
+
+                    -   Name: level.err
+                        Match: 'error'
+                        Replace: '%Error%$0'
+
+                    -   Name: level.other
+                        Match: '^[^~#]+$'
+                        Replace: '~W~#K#$0'
+
+            -   Name: DateTime
+                Match: *ISODateRegexF3
+                Replace: *ISODateReplaceF3
+
+            -   Name: Format
+                Match: '%c(?<text>(?:[^"\\]+|\\.)+)", ?"(?<css>[^"]*)'
+                Replace: '~<~#<#${css}${text}#>#~>~'
+                Push: false
+                Repeat: true
+                Groups:
+                    -   Name: css.bold
+                        Match: 'font-weight:\s*bold(?:;\s*)?'
+                        Replace: '~W~$0'
+                        Push: false
+
+                    -   Name: css.bg
+                        Match: 'background-color: ##(...)(?:;\s*)?'
+                        Replace: '#$$$1#$0'
+                        Push: false
+
+                    -   Name: css.border
+                        Match: 'border: [^;]+##(...)(?:;\s*)?'
+                        Replace: '~<~~$$$1~<{[ ~>~$0'
+                        Push: false
+
+                    -   Name: css.fg
+                        Match: 'color: ##(...)(?:;\s*)?'
+                        Replace: '~$$$1~$0'
+                        Push: false
+
+                    -   Name: css.unhandled
+                        Match: '[a-z-]+: ?[^;]+(?:;\s*)?'
+                        Replace: ''
+                        Push: false
+
+            -   Name: ErrorStack
+                Match: '(?<=(?:"stack"|stack):")[^"]+'
+                Replace: '\\n$0\\n'
+                Groups: *JSErrorGroups
+
+            -   Name: JSON
+                Parse: JSON
+                Match: ' (?<JSON>\[.+\]$)'
+                Replace: '${JSON.unread%()}'
+
+            -   Name: textJSON
+                Parse: JSON
+                Match: |
+                    (?x)
+                    (?:
+                        (?<!")
+                        (?:
+                                (?<obj>\{(?!\}))    # root object.
+                            |   (?<arr>\[(?!\d+\])) # root array, but not useState[num].
+                        )
+                    )
+                    (?:
+                            (?:
+                                "
+                                [^"]+
+                                ":
+                            )
+                        |   (?:
+                                    true
+                                |   false
+                                |   null
+                                |   undefined
+                                |   -?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?
+                                |   -?Infinity
+                                |   NaN
+                            ),?
+                        |   "(?:\\.|[^"\\])*",?     # JSON string with escapes.
+                        |   \\"(?:\\.|[^"\\])*\\",? # escaped JSON string with escapes.
+                        |   (?<obj>\{)
+                        |   (?<-obj>\},?)
+                        |   (?<arr>\[)
+                        |   (?<-arr>\],?)
+                    )*
+                    (?(obj)(?!))
+                    (?(arr)(?!))
+                Replace: '$1${JSON.unread%()}'
 
     -   Name: VFXLog
         RecordStart: '^\d{4}(?:-\d\d){2} (?:\d\d:){2}\d\d.\d{4}'
         Reset: '\[F\]\[App +\] Version:|RoomScheduleViewModel +. (?:Shutting Down|Restarting) Computer'
         Vars:
-            DateDash:           ''
-            DateYear:           '~BLUE~#BLACK#'
-            DateMonth:          ''
-            DateDay:            ''
-            DateSuffixSpace:    ''
-            TimeColon:  ''
-            TimeHours:  ~CYAN~
-            TimeMins:   ''
-            TimeSecs:   '#yellow#'
-            TimeDot:    '#BLACK#'
-            TimeSecsDiv10: ~WHITE~
-            TimeSecsDiv100: '#black#'
-            TimeSecsDiv1000: ~white~
-            TimeSecsDiv10000: ~BLACK~
-
-            Trace:  ~BLACK~
-            Debug:  ~white~
-            Info:   ~WHITE~
-            Warn:   ~YELLOW~
-            Error:  ~RED~
-            Fatal:  '~WHITE~#RED#'
+            <<: [*CommonVars, *ExceptionWithStackTraceVars]
 
             ClassName:  '#blue#'
             ThreadID:   '#green#'
-
-            ExceptionNamespace:     '~magenta~#black#'
-            ExceptionClass:         '~CYAN~#magenta#'
-            # And the space after it:
-            ExceptionColon:         '~white~#yellow#'
-            ExceptionMessage:       '~YELLOW~#red#'
-            # Includes the spaces either side:
-            InnerExceptionArrow:    '#black# ~RED~-#BLACK#-#white#-#WHITE#>#black# '
-
-            # Includes the spaces either side, as well as the EndOfInnerException marker line:
-            StackTraceAt:                   '~MAGENTA~#magenta#'
-            StackTraceNamespace:            ~BLACK~
-            StackTraceNamespaceDot:         ~white~
-            StackTraceClass:                ~GREEN~
-            StackTraceMember:               ~YELLOW~
-            StackTraceArgsPunctuation:      ~BLUE~
-            StackTraceArgsTypes:            ~cyan~
-            StackTraceArgsNames:            ~yellow~
-            StackTraceDetailsIn:            ~BLACK~
-            StackTraceDetailsPath:          ~green~
-            StackTraceDetailsPathSlash:     ~BLACK~
-            StackTraceDetailsDir:           ~GREEN~
-            StackTraceDetailsFilename:      ~YELLOW~
-            StackTraceDetailsColon:         ~BLACK~
-            StackTraceDetailsLine:          ''
-            StackTraceDetailsLineNumber:    ~CYAN~
         Rules:
             -
                 Name: DateTime
                 Match: '^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d).(\d)(\d)(\d)(\d)'
-                Replace: '%DateYear%$1%DateDash%-%DateMonth%$2%DateDash%-%DateDay%$3%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9%TimeSecsDiv10000%$10'
+                Replace: *ISODateReplaceF4
             #-
             #   Name: Time
             #   Match: '^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d).(\d)(\d)(\d)(\d)'
@@ -1661,7 +1928,7 @@ RuleSets:
                         .+                                  # OneOrMore(greedy): anything except newlines
                     )?
                 Replace: '$0'
-                Groups: *ExceptionStackTrace
+                Groups: *ExceptionStackTraceRules
 
             -
                 Name: Trace
@@ -1828,28 +2095,7 @@ RuleSets:
     -   Name: LyncLog
         RecordStart: '^(?:\d\d/){2}\d{4}\|(?:\d\d:){2}\d\d.\d{3} '
         Vars:
-            DateDash:           ''
-            DateYear:           '~BLUE~#BLACK#'
-            DateMonth:          ''
-            DateDay:            ''
-            DateSuffixSpace:    ''
-            TimeColon:  ''
-            TimeHours:  '~CYAN~'
-            TimeMins:   ''
-            TimeSecs:   '#yellow#'
-            TimeDot:    '#BLACK#'
-            TimeSecsDiv10: '~WHITE~'
-            TimeSecsDiv100: '#black#'
-            TimeSecsDiv1000: '~white~'
-            TimeSecsDiv10000: '~BLACK~'
-
-            Trace:  '~BLACK~'
-            Debug:  '~white~'
-            Info:   '~WHITE~'
-            Warn:   '~YELLOW~'
-            Error:  '~RED~'
-            Fatal:  '~WHITE~#RED#'
-
+            <<: *CommonVars
             ClassName: '#blue#'
         Rules:
             -
@@ -1967,56 +2213,10 @@ RuleSets:
         RecordStart: '\d\d-...-\d{4} (?:\d\d:){2}\d\d.\d{3}'
         Reset: BookingViewModel is starting up
         Vars:
-            DateDash:           ''
-            DateYear:           '~BLUE~#BLACK#'
-            DateMonth:          ''
-            DateDay:            ''
-            DateSuffixSpace:    ''
-            TimeColon:  ''
-            TimeHours:  ~CYAN~
-            TimeMins:   ''
-            TimeSecs:   '#yellow#'
-            TimeDot:    '#BLACK#'
-            TimeSecsDiv10: ~WHITE~
-            TimeSecsDiv100: '#black#'
-            TimeSecsDiv1000: ~white~
-            TimeSecsDiv10000: ~BLACK~
-
-            Trace:  ~BLACK~
-            Debug:  ~white~
-            Info:   ~WHITE~
-            Warn:   ~YELLOW~
-            Error:  ~RED~
-            Fatal:  '~WHITE~#RED#'
+            <<: [*CommonVars, *ExceptionWithStackTraceVars]
 
             ClassName:  '#blue#'
             ThreadID:   '#BLUE#'
-
-            ExceptionNamespace:     '~magenta~#black#'
-            ExceptionClass:         '~CYAN~#magenta#'
-            # And the space after it:
-            ExceptionColon:         '~white~#yellow#'
-            ExceptionMessage:       '~YELLOW~#red#'
-            # Includes the spaces either side:
-            InnerExceptionArrow:    '#black# ~RED~-#BLACK#-#white#-#WHITE#>#black# '
-
-            # Includes the spaces either side, as well as the EndOfInnerException marker line:
-            StackTraceAt:                   '~MAGENTA~#magenta#'
-            StackTraceNamespace:            ~BLACK~
-            StackTraceNamespaceDot:         ~white~
-            StackTraceClass:                ~GREEN~
-            StackTraceMember:               ~YELLOW~
-            StackTraceArgsPunctuation:      ~BLUE~
-            StackTraceArgsTypes:            ~cyan~
-            StackTraceArgsNames:            ~yellow~
-            StackTraceDetailsIn:            ~BLACK~
-            StackTraceDetailsPath:          ~green~
-            StackTraceDetailsPathSlash:     ~BLACK~
-            StackTraceDetailsDir:           ~GREEN~
-            StackTraceDetailsFilename:      ~YELLOW~
-            StackTraceDetailsColon:         ~BLACK~
-            StackTraceDetailsLine:          ''
-            StackTraceDetailsLineNumber:    ~CYAN~
         Rules:
             -
                 Name: DateTime
@@ -2064,7 +2264,7 @@ RuleSets:
                         .+                                  # OneOrMore(greedy): anything except newlines
                     )?
                 Replace: '%ExceptionNamespace%${namespace}%ExceptionClass%${class}%ExceptionColon%${colon}%ExceptionMessage%${message}'
-                Groups: *ExceptionStackTrace
+                Groups: *CSExceptionGroups
 
             - { Name: Trace,    Test: \bTrace\b,    Match: .+, Replace: '%Trace%$0' }
             - { Name: Debug,    Test: \bDebug\b,    Match: .+, Replace: '%Debug%$0' }

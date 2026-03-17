@@ -37,6 +37,7 @@ internal static partial class Program {
 	private const string DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss.ffff: ";
 
 
+	private static string? configFile;
 	private static ConfigRoot config = null!;
 
 	internal static readonly List<FlagSet> flagSets = [];
@@ -47,7 +48,8 @@ internal static partial class Program {
 	private static readonly Dictionary<char, TimeSpan> timeScale = new() {
 		{ 'S', TimeSpan.FromSeconds(1) },
 		{ 'M', TimeSpan.FromMinutes(1) },
-		{ 'H', TimeSpan.FromHours(1) }
+		{ 'H', TimeSpan.FromHours(1) },
+		{ 'D', TimeSpan.FromDays(1) }
 	};
 
 	private static readonly List<(LogLevel level, string marker)> bucket = [];
@@ -129,7 +131,44 @@ internal static partial class Program {
 	internal static DateTime? lastPrintedTime;
 
 
-	private static void WriteException(Exception exception, TextWriter @out) {
+	private static void WriteException(Exception exception, TextWriter @out, int yamlContext = 2) {
+		if (exception is YamlException yamlException) {
+			if (configFile is not null) {
+				var startIndex = configFile[..(int)yamlException.Start.Index].LastIndexOfAny(lineBreakChars);
+				for (int i = 0; i < yamlContext; i++) {
+					startIndex = configFile.LastIndexOfAny(lineBreakChars, startIndex - 1);
+					if (startIndex == -1) {
+						startIndex = 0;
+						break;
+					}
+				}
+
+				var endIndex = configFile.IndexOfAny(lineBreakChars, (int)yamlException.End.Index);
+				for (int i = 0; i < yamlContext; i++) {
+					endIndex = configFile.IndexOfAny(lineBreakChars, endIndex + 1);
+					if (endIndex == -1) {
+						endIndex = configFile.Length;
+						break;
+					}
+				}
+
+				@out.WriteLineColours($"#M#~W~{yamlException.Message} at line {yamlException.Start.Line + 1}, column {yamlException.Start.Column + 1}:");
+				@out.WriteColours($"~Y~{configFile[startIndex..(int)yamlException.Start.Index].EscapeColourCodeChars()}");
+				if (yamlException.Start.Index == yamlException.End.Index) {
+					@out.WriteColours($"#r#~Y~{$"{configFile[(int)yamlException.Start.Index]}".EscapeColourCodeChars()}");
+					@out.WriteColours($"~Y~{configFile[((int)yamlException.End.Index + 1)..endIndex].EscapeColourCodeChars()}");
+				} else {
+					@out.WriteColours($"#r#~Y~{configFile[(int)yamlException.Start.Index..(int)yamlException.End.Index].EscapeColourCodeChars()}");
+					@out.WriteColours($"~Y~{configFile[(int)yamlException.End.Index..endIndex].EscapeColourCodeChars()}");
+				}
+
+				Console.ForegroundColor = ConsoleColor.White;
+				Console.BackgroundColor = ConsoleColor.Red;
+			}
+
+			@out.Write(exception.GetType().Name + ": ");
+		}
+
 		@out.Write(exception);
 		//NOTE: YamlDotNet exceptions override ToString, hiding any InnerException details!.
 		if (exception is YamlException { InnerException: not null } yx) {
@@ -147,11 +186,11 @@ internal static partial class Program {
 		} catch (Exception exception) {
 			Console.ForegroundColor = ConsoleColor.White;
 			Console.BackgroundColor = ConsoleColor.Red;
-			WriteException(exception, Console.Out);
+			WriteException(exception, Console.Out, 3);
 #if DEBUG
 			if (Console.IsOutputRedirected) {
 				Console.Error.WriteLine(new string('-', 128));
-				WriteException(exception, Console.Error);
+				WriteException(exception, Console.Error, 3);
 			}
 #endif
 			Console.ResetColor();
@@ -273,8 +312,10 @@ internal static partial class Program {
 			)
 			.Build();
 
-		// ReSharper disable once AssignNullToNotNullAttribute
-		config = deserializer.Deserialize<ConfigRoot>(File.ReadAllText(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "appSettings.yaml")));
+		configFile = File.ReadAllText(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "appSettings.yaml"));
+		config = deserializer.Deserialize<ConfigRoot>(new MergingParser(new Parser(new StringReader(configFile))));
+
+		configFile = null;
 	}
 
 	private static bool ProcessArgs(string[] args) {

@@ -1,8 +1,13 @@
 {
-	"profiles": {
-		"logPrintCore": {
-			"commandName": "Project",
-			"commandLineArgs": "-r GitAll -f GitAll D:\\cygwin64\\home\\307748\\GA.log"
-		}
-	}
+  "profiles": {
+    "logPrintCore": {
+      "commandName": "Project",
+      "commandLineArgs": "-r GitAll -f GitAll D:\\cygwin64\\home\\307748\\GA.log"
+    },
+    "console.log": {
+      "commandName": "Project",
+      "commandLineArgs": "-r js console.log ",
+      "workingDirectory": "D:\\Code\\chromeLog"
+    }
+  }
 }

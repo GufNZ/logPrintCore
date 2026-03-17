@@ -21,8 +21,9 @@ internal sealed class RegexFromStringConverter : IYamlTypeConverter {
 		return (type == typeof(Regex));
 	}
 
+
 	/// <inheritdoc />
-	public object ReadYaml(IParser parser, Type type) {
+	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer) {
 		var scalar = parser.Consume<Scalar>();
 		if (_debug) {
 			scalar.Dump("scalar :: " + type);
@@ -34,7 +35,7 @@ internal sealed class RegexFromStringConverter : IYamlTypeConverter {
 	}
 
 	/// <inheritdoc />
-	public void WriteYaml(IEmitter emitter, object? value, Type type) {
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer rootSerializer) {
 		throw new NotSupportedException();
 	}
 }

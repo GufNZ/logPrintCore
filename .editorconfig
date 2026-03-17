@@ -393,5 +393,5 @@ indent_style = space
 trim_trailing_whitespace = false
 
 [*.yml]
-indent_size = 2
+indent_size = 4
 indent_style = space

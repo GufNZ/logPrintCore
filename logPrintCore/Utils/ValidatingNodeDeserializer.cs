@@ -17,12 +17,12 @@ internal sealed class ValidatingNodeDeserializer : INodeDeserializer {
 	}
 
 
-	public bool Deserialize(IParser parser, Type expectedType, Func<IParser, Type, object?> nestedObjectDeserializer, out object? value) {
+	public bool Deserialize(IParser parser, Type expectedType, Func<IParser, Type, object?> nestedObjectDeserializer, out object? value, ObjectDeserializer rootDeserializer) {
 		if (_debug) {
 			expectedType.Dump(nameof(expectedType));
 		}
 
-		bool deserialized = _nodeDeserializer.Deserialize(parser, expectedType, nestedObjectDeserializer, out value);
+		bool deserialized = _nodeDeserializer.Deserialize(parser, expectedType, nestedObjectDeserializer, out value, rootDeserializer);
 		if (_debug) {
 			deserialized.Dump(nameof(deserialized), multiLine: true, recurseFilter: (_, _) => true);
 			value.Dump(nameof(value), multiLine: true, recurseFilter: (_, _) => true);
