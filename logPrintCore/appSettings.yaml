@@ -15,8 +15,8 @@ Docs:
             ~C~FILENAME~M~      Read from the specified file rather than ~C~STDIN~M~.  ~Y~Only the last filename is used.
             ~C~-~M~             Read from ~C~STDIN~M~ - ~y~this is the default~M~.
         
-            ~c~-a~M~            Output colours using ~W~ANSI~M~ instead of using ~c~ConsoleColor~M~.
-                           ~y~Note that not all colour combinations work in ANSI mode - bright background colours cause issues.
+            ~c~-A~M~            Output colours using ~c~ConsoleColor~M~ instead of using ~W~ANSI~M~.  ~R~Legacy code path - about ~$F80~5x~R~ slower.
+            ~c~-a~M~            Output colours using ~W~ANSI~M~ instead of using ~c~ConsoleColor~M~.  ~Y~This is the default if no ~c~-A~y~/~c~-a~Y~ are supplied.
         
             ~c~-F~M~            Follow - do not exit at ~w~EOF~M~ but rather await more data.  ~Y~Only makes sense when not reading ~C~STDIN~Y~.
             ~c~-FD~M~           Follow Directory - like Follow but if any new file of the same extension arrives in that directory, processing switches to that new file.

@@ -6,7 +6,7 @@
     },
     "console.log": {
       "commandName": "Project",
-      "commandLineArgs": "-r js console.log ",
+      "commandLineArgs": "-r js console.log -f scrub -A",
       "workingDirectory": "D:\\Code\\chromeLog"
     }
   }

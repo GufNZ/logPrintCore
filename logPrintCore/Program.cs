@@ -319,7 +319,7 @@ internal static partial class Program {
 	}
 
 	private static bool ProcessArgs(string[] args) {
-		AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.ConsoleColor;
+		AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.Ansi;
 
 		args = ProcessArgsRepeats();
 
@@ -460,6 +460,9 @@ internal static partial class Program {
 
 
 				case 'A':
+					AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.ConsoleColor;
+					break;
+
 				case 'a':
 					AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.Ansi;
 					break;

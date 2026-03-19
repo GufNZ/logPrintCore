@@ -30,7 +30,7 @@ internal sealed class RegexFromStringConverter : IYamlTypeConverter {
 		}
 
 		return (type == typeof(Regex))
-			? new Regex(scalar.Value.Replace("\\e", "\e"))
+			? new Regex(scalar.Value.Replace("\\e", "\e"), RegexOptions.Compiled)
 			: scalar;
 	}
 

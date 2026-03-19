@@ -110,7 +110,7 @@ internal static partial class AnsiConsoleColourExtensions {
 	}
 
 
-	public static ConsoleColourOutputMode OutputMode = ConsoleColourOutputMode.ConsoleColor;
+	public static ConsoleColourOutputMode OutputMode = ConsoleColourOutputMode.Ansi;
 
 
 	public static string? EscapeColourCodeChars(this string? line) {
