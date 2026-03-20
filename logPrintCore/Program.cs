@@ -92,7 +92,6 @@ internal static partial class Program {
 	private static DateTime? stepStartTime;
 
 	private static bool summariseMode;
-	private static StringBuilder? summarised;
 
 	private static bool firstLine;
 	private static bool argsError;
@@ -130,6 +129,8 @@ internal static partial class Program {
 
 	internal static DateTime? lastPrintedTime;
 
+	private static readonly StringBuilder builder = new();
+
 
 	private static void WriteException(Exception exception, TextWriter @out, int yamlContext = 2) {
 		if (exception is YamlException yamlException) {
@@ -156,17 +157,14 @@ internal static partial class Program {
 				@out.WriteColours($"~Y~{configFile[startIndex..(int)yamlException.Start.Index].EscapeColourCodeChars()}");
 				if (yamlException.Start.Index == yamlException.End.Index) {
 					@out.WriteColours($"#r#~Y~{$"{configFile[(int)yamlException.Start.Index]}".EscapeColourCodeChars()}");
-					@out.WriteColours($"~Y~{configFile[((int)yamlException.End.Index + 1)..endIndex].EscapeColourCodeChars()}");
+					@out.WriteLineColours($"~Y~{configFile[((int)yamlException.End.Index + 1)..endIndex].EscapeColourCodeChars()}");
 				} else {
 					@out.WriteColours($"#r#~Y~{configFile[(int)yamlException.Start.Index..(int)yamlException.End.Index].EscapeColourCodeChars()}");
-					@out.WriteColours($"~Y~{configFile[(int)yamlException.End.Index..endIndex].EscapeColourCodeChars()}");
+					@out.WriteLineColours($"~Y~{configFile[(int)yamlException.End.Index..endIndex].EscapeColourCodeChars()}");
 				}
-
-				Console.ForegroundColor = ConsoleColor.White;
-				Console.BackgroundColor = ConsoleColor.Red;
 			}
 
-			@out.Write(exception.GetType().Name + ": ");
+			@out.WriteColours($"~W~#R#{exception.GetType().Name}: ", resetAtEnd: false);
 		}
 
 		@out.Write(exception);
@@ -175,7 +173,7 @@ internal static partial class Program {
 			@out.Write($"{Environment.NewLine}-> {yx.InnerException}");
 		}
 
-		@out.WriteLine();
+		@out.WriteLineColours("~!~#!#");
 	}
 
 	private static void Main(string[] args) {
@@ -184,8 +182,6 @@ internal static partial class Program {
 		try {
 			Run(args);
 		} catch (Exception exception) {
-			Console.ForegroundColor = ConsoleColor.White;
-			Console.BackgroundColor = ConsoleColor.Red;
 			WriteException(exception, Console.Out, 3);
 #if DEBUG
 			if (Console.IsOutputRedirected) {
@@ -193,7 +189,6 @@ internal static partial class Program {
 				WriteException(exception, Console.Error, 3);
 			}
 #endif
-			Console.ResetColor();
 			exitCode = 1;
 		}
 
@@ -253,7 +248,7 @@ internal static partial class Program {
 		}
 
 		if (summariseMode) {
-			summarised = new();
+			builder.Clear();
 		}
 
 		do {
@@ -270,11 +265,11 @@ internal static partial class Program {
 				}
 			}
 
-			if (summarised?.Length > 0) {
+			if (builder.Length > 0) {
 				AppendAndClearBucket();
 				// ReSharper disable once PossibleInvalidOperationException
-				Console.Out.WriteLineColours(timeOutputRuleSet!.Process(stepStartTime!.Value.ToString(DATE_TIME_FORMAT)) + summarised);
-				summarised.Clear();
+				Console.Out.WriteLineColours(timeOutputRuleSet!.Process(stepStartTime!.Value.ToString(DATE_TIME_FORMAT)) + builder);
+				builder.Clear();
 			}
 
 			if (!shownSkip) {
@@ -935,15 +930,15 @@ internal static partial class Program {
 		}
 
 		if (grep != null) {
-			grepRE = new(grep);
+			grepRE = new(grep, RegexOptions.Compiled);
 		}
 
 		if (invGrep != null) {
-			invGrepRE = new(invGrep);
+			invGrepRE = new(invGrep, RegexOptions.Compiled);
 		}
 
 		if (exclGrep != null) {
-			exclGrepRE = new(exclGrep);
+			exclGrepRE = new(exclGrep, RegexOptions.Compiled);
 		}
 
 		if (follow && (fileName ?? "-") == "-") {
@@ -957,12 +952,10 @@ internal static partial class Program {
 			argsError = true;
 		}
 
-		if (fileName?.StartsWith("/cygdrive") ?? false) {
-			fileName = Regex.Replace(fileName, "^/cygdrive/(.)", "$1:");
-		}
-
 		if (fileName?.StartsWith('/') ?? false) {
-			fileName = Regex.Replace(fileName, "^/", "/cygwin64/");
+			fileName = fileName.StartsWith("/cygdrive", StringComparison.Ordinal)
+				? Regex.Replace(fileName, "^/cygdrive/(.)", "$1:")
+				: Regex.Replace(fileName, "^/", "/cygwin64/");
 		}
 
 		return;
@@ -1683,7 +1676,7 @@ internal static partial class Program {
 #if DEBUG_INPUT
 			Console.Error.WriteLine("Found a line...");
 #endif
-			var parts = Regex.Match(output, @"^(.+[\n\r]+)*(.+)");
+			var parts = LineSplitRE().Match(output);
 #if DEBUG_INPUT
 			parts.Groups[0].Captures.Select(c => c.Value).ToList().Dump("wholeLines", true);
 			parts.Groups[1].Value.Dump("partialLine");
@@ -1701,11 +1694,14 @@ internal static partial class Program {
 #endif
 			}
 
-			parts.Groups[0]
-				.Captures
-				.Select(capture => capture.Value)
-				.ToList()
-				.ForEach(ProcessAndOutputLine);
+			foreach (
+				var l
+				in parts.Groups[0]
+					.Captures
+					.Select(capture => capture.Value)
+			) {
+				ProcessAndOutputLine(l);
+			}
 		}
 
 #if DEBUG_INPUT
@@ -1713,11 +1709,14 @@ internal static partial class Program {
 
 #endif
 		if (accumulated.Length > 0) {
-			accumulated
-				.ToString()
-				.Split(lineBreakChars, StringSplitOptions.RemoveEmptyEntries)
-				.ToList()
-				.ForEach(ProcessAndOutputLine);
+			foreach (
+				var l
+				in accumulated
+					.ToString()
+					.Split(lineBreakChars, StringSplitOptions.RemoveEmptyEntries)
+			) {
+				ProcessAndOutputLine(l);
+			}
 		}
 	}
 
@@ -1726,6 +1725,7 @@ internal static partial class Program {
 
 		string? line;
 
+		var recordBuilder = new StringBuilder();
 		var record = new List<string>();
 
 		while (!((line = reader.GetNextLine(timeout)) == null || breakForNextFile)) {
@@ -1744,7 +1744,8 @@ internal static partial class Program {
 					}
 
 
-					ProcessAndOutputLine(string.Join("", record));
+					recordBuilder.Clear();
+					ProcessAndOutputLine(record.Aggregate(recordBuilder, (sb, l) => sb.Append(l), sb => sb.ToString()));
 					record.Clear();
 				}
 
@@ -1759,7 +1760,8 @@ internal static partial class Program {
 #if DEBUG_INPUT
 				Console.Error.WriteLine("New record starts; output last record#=" + record.Count);
 #endif
-				ProcessAndOutputLine(string.Join("", record));
+				recordBuilder.Clear();
+				ProcessAndOutputLine(record.Aggregate(recordBuilder, (sb, l) => sb.Append(l), sb => sb.ToString()));
 				record.Clear();
 			}
 #if DEBUG_INPUT
@@ -1794,8 +1796,16 @@ internal static partial class Program {
 
 
 		if (record.Count > 0) {
-			ProcessAndOutputLine(string.Join("", record));
+			recordBuilder.Clear();
+			ProcessAndOutputLine(record.Aggregate(recordBuilder, (sb, l) => sb.Append(l), sb => sb.ToString()));
 		}
+	}
+
+	private static string ResetFlags(FlagSet flagSet, string line) {
+		return flagSet.Reset(line);
+	}
+	private static string ProcessFlags(FlagSet flagSet, string line) {
+		return flagSet.Process(line);
 	}
 
 	private static void ProcessAndOutputLine(string line) {
@@ -1839,11 +1849,9 @@ internal static partial class Program {
 
 		shownSkip = false;
 
-		var action = ruleSet!.Reset?.IsMatch(line) ?? false
-			? (Func<FlagSet, string, string>)(
-				(flagSet, l) => flagSet.Reset(l)
-			)
-			: (flagSet, l) => flagSet.Process(l);
+		Func<FlagSet, string, string> action = ruleSet!.Reset?.IsMatch(line) ?? false
+			? ResetFlags
+			: ProcessFlags;
 
 		var flagsOutput = flagSets.Aggregate(
 			new StringBuilder(),
@@ -1983,10 +1991,10 @@ internal static partial class Program {
 			stepStartTime ??= time.TruncateTo(stepTime);
 
 			AppendAndClearBucket();
-			if (summarised!.Length > 0) {
+			if (builder.Length > 0) {
 				// ReSharper disable once PossibleInvalidOperationException
-				Console.Out.WriteLineColours(timeOutputRuleSet!.Process(stepStartTime.Value.ToString(DATE_TIME_FORMAT)) + summarised);
-				summarised.Clear();
+				Console.Out.WriteLineColours(timeOutputRuleSet!.Process(stepStartTime.Value.ToString(DATE_TIME_FORMAT)) + builder);
+				builder.Clear();
 			}
 
 #pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
@@ -2007,7 +2015,7 @@ internal static partial class Program {
 				AppendAndClearBucket();
 			}
 		} else {
-			summarised!.Append(output.marker);
+			builder.Append(output.marker);
 		}
 	}
 
@@ -2017,7 +2025,7 @@ internal static partial class Program {
 		}
 
 
-		summarised!.Append(
+		builder.Append(
 			bucket
 				.MaxBy(pair => Precedence.LogLevels.IndexOf(pair.level))
 				.marker
@@ -2064,4 +2072,7 @@ internal static partial class Program {
 
 	[GeneratedRegex(@"^(\d+)x$")]
 	private static partial Regex RepeatMultipleRE();
+
+	[GeneratedRegex(@"^(.+[\n\r]+)*(.+)")]
+	private static partial Regex LineSplitRE();
 }

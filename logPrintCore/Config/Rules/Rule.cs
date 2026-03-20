@@ -581,12 +581,14 @@ internal partial class Rule {
 	}
 
 
+	// ReSharper disable UnusedMember.Local
 	private enum JsonStyle {
 		Expanded = 0,
 		Compact = '!',
 		InitialCompact = '^',
 		CompactUnlessComplex = '%'
 	}
+	// ReSharper restore UnusedMember.Local
 
 
 	private sealed partial class JsonReplacePart : ReplacePart {

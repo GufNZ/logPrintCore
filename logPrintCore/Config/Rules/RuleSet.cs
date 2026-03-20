@@ -63,7 +63,10 @@ internal sealed class RuleSet {
 		Console.Error.WriteLine(new string('=', AnsiConsoleColourExtensions.OutputWidth - 1));
 		line.Dump("<<<<");
 #endif
-		RulesList.ForEach(rule => line = rule.Process(line));
+		foreach (var rule in RulesList) {
+			line = rule.Process(line);
+		}
+
 #if DEBUG_MATCHING
 		line.Dump(">>>>");
 #endif
@@ -73,10 +76,12 @@ internal sealed class RuleSet {
 	public (LogLevel, string) Summarise(string? line) {
 		var result = (line, marker: ((char)LogLevel.None).ToString(), level: LogLevel.None);
 
-		RulesList
-			.Where(rule => Enum.IsDefined(typeof(LogLevel), rule.Name))
-			.ToList()
-			.ForEach(rule => result = rule.Summarise(result));
+		var levelRules = RulesList
+			.Where(rule => Enum.IsDefined(typeof(LogLevel), rule.Name));
+
+		foreach (var rule in levelRules) {
+			result = rule.Summarise(result);
+		}
 
 		return (result.level, result.marker);
 	}

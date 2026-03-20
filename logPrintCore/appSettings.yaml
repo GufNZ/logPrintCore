@@ -445,7 +445,7 @@ FlagSets:
         Flags:
             -   Name: StreamFPS
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^F\n]+)|F)+?FPS=(?<fps>[^;]+)'
                 Types:
                     on:     bool
                     fps:    float
@@ -462,7 +462,7 @@ FlagSets:
         Flags:
             -   Name: StreamFPS
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^F\n]+)|F)+?FPS=(?<fps>[^;]+)'
                 Types:
                     on:     bool
                     fps:    float
@@ -480,7 +480,7 @@ FlagSets:
         Flags:
             -   Name: StreamFPS
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^F\n]+)|F)+?FPS=(?<fps>[^;]+)'
                 Types:
                     on:     bool
                     fps:    float
@@ -497,7 +497,7 @@ FlagSets:
         Flags:
             -   Name: StreamFPS
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^F\n]+)|F)+?FPS=(?<fps>[^;]+)'
                 Types:
                     on:     bool
                     fps:    float
@@ -515,7 +515,7 @@ FlagSets:
         Flags:
             -   Name: StreamBitRate
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?bitRate=(?<kb>t;[^K]+)Kb/s .(?<bp>;[^b]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^b\n]+)|b)+?bitRate=(?<kbps>[^K]+)Kb/s .(?<bps>[^b]+)'
                 Types:
                     on:     bool
                     kbps:   int
@@ -533,7 +533,7 @@ FlagSets:
         Flags:
             -   Name: StreamBitRate
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?bitRate=(?<kb>t;[^K]+)Kb/s .(?<bp>;[^b]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^b\n]+)|b)+?bitRate=(?<kbps>[^K]+)Kb/s .(?<bps>[^b]+)'
                 Types:
                     on:     bool
                     kbps:   int
@@ -554,7 +554,7 @@ FlagSets:
         Flags:
             -   Name: StreamBitRate
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?bitRate=(?<kb>t;[^K]+)Kb/s .(?<bp>;[^b]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^b\n]+)|b)+?bitRate=(?<kbps>[^K]+)Kb/s .(?<bps>[^b]+)'
                 Types:
                     on:     bool
                     kbps:   int
@@ -572,7 +572,7 @@ FlagSets:
         Flags:
             -   Name: StreamBitRate
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?bitRate=(?<kb>t;[^K]+)Kb/s .(?<bp>;[^b]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^b\n]+)|b)+?bitRate=(?<kbps>[^K]+)Kb/s .(?<bps>[^b]+)'
                 Types:
                     on:     bool
                     kbps:   int
@@ -614,7 +614,7 @@ FlagSets:
 
             -   Name: LocalStrain
                 TransitionToOnMatch: StreamingStatusPing|OnStreamingChanged.Stopped
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?time=(?<time>\d+); frames=(?<frames>[^;]+); dropped=(?<dropped>[^;]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^t\n]+)|t)+?time=(?<time>\d+); frames=(?<frames>[^;]+); dropped=(?<dropped>[^;]+)'
                 Types:
                     on:         bool
                     time:       int
@@ -687,7 +687,7 @@ FlagSets:
 
             -   Name: CalculatedHealth
                 TransitionToOnMatch: 'StreamingStatusPing|OnStreamingChanged.Stopped'
-                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);.+?FPS=(?<fps>[^;]+)[^(]+.(?<bps>[^b]+)b/s.; time=(?<time>\d+); frames=(?<frames>[^;]+); dropped=(?<dropped>[^;]+); strain=(?<strain>[^%]+)'
+                OnMatch: 'StreamingStatusPing..stream=(?<on>True|False);(?:(?>[^F\n]+)|F)+?FPS=(?<fps>[^;]+)[^(]+.(?<bps>[^b]+)b/s.; time=(?<time>\d+); frames=(?<frames>[^;]+); dropped=(?<dropped>[^;]+); strain=(?<strain>[^%]+)'
                 Types:
                     on:         bool
                     fps:        float
@@ -827,8 +827,8 @@ FlagSets:
             -   Name: CanRecord
                 Off: ~r~r
                 On: ~g~r
-                OffMatch: CanStartRecording conclusion:.+?canRec:False
-                OnMatch: CanStartRecording conclusion:.+?canRec:True
+                OffMatch: CanStartRecording conclusion:(?:(?>[^c\n]+)|c)+?canRec:False
+                OnMatch: CanStartRecording conclusion:(?:(?>[^c\n]+)|c)+?canRec:True
 
             -   Name: WantRecording
                 Off: ~r~R
@@ -839,14 +839,14 @@ FlagSets:
             -   Name: IsRecording
                 Off: '#K#~R~r'
                 On: '#K#~G~r'
-                OffMatch: CanStartRecording conclusion:.+?isRec:False
-                OnMatch: CanStartRecording conclusion:.+?isRec:True
+                OffMatch: CanStartRecording conclusion:(?:(?>[^i\n]+)|i)+?isRec:False
+                OnMatch: CanStartRecording conclusion:(?:(?>[^i\n]+)|i)+?isRec:True
 
             -   Name: ActiveRecording
                 Off: '#K#A'
                 On: '#K#~Y~A'
-                OffMatch: CanStartRecording conclusion:.+?hasActiveRec:False
-                OnMatch: CanStartRecording conclusion:.+?hasActiveRec:True
+                OffMatch: CanStartRecording conclusion:(?:(?>[^h\n]+)|h)+?hasActiveRec:False
+                OnMatch: CanStartRecording conclusion:(?:(?>[^h\n]+)|h)+?hasActiveRec:True
 
             -   Name: CanRecordButton
                 Off: R
@@ -866,8 +866,8 @@ FlagSets:
                 On: ~g~B
                 Off: ~K~B
                 TransitionToOn: ~R~B
-                OnMatch: 'ConsoleManager.+?active=\{.+hasAC=True\r?$'
-                TransitionToOnMatch: 'ConsoleManager.+?active=,.+hasAC=True\r?$'
+                OnMatch: 'ConsoleManager(?:(?>[^a\n]+)|a)+?active=\{.+hasAC=True\r?$'
+                TransitionToOnMatch: 'ConsoleManager(?:(?>[^a\n]+)|a)+?active=,.+hasAC=True\r?$'
                 OffMatch: 'ConsoleManager.+hasAC=False\r?$|ConversationEndingBegin'
 
             -   Name: ActiveMatch
@@ -875,14 +875,26 @@ FlagSets:
                 OnMatch: |
                     (?x)
                     (?>                             # Atomic group:
-                        .+?                             # OneOrMore(ungreedy): Anything except newlines.
+                        (?:                             # OneOrMore(ungreedy):
+                                (?>                         # Either: Atomic group:
+                                    [^C\n]+                     # OneOrMore(greedy): Anything except 'C' or newline.
+                                )
+                            |                               # Or
+                                C                               # 'C'
+                        )+?
                         ConsoleManager                  # 'ConsoleManager'
                         \ +                             # OneOrMore(greedy): spaces.
                         .                               # Anything except newline.
                     )
                     \ active=                       # ' active='
                     \{                              # '{'
-                    .+?                             # OneOrMore(ungreedy): Anything except newlines.
+                    (?:                             # OneOrMore(ungreedy):
+                            (?>                         # Either: Atomic group:
+                                [^B\n]+                     # OneOrMore(greedy): Anything except 'B' or newline.
+                            )
+                        |                               # Or
+                            B                               # 'B'
+                    )+?
                     BookingId\.Hash=                # 'BookingId.Hash='
                     (?<activeID>-?\d+)              # Named group 'activeID' is an int.
                     [^}]+                           # OneOrMore(greedy): Not '}'
@@ -890,7 +902,13 @@ FlagSets:
                     ,\ currentScheduled=            # ', currentScheduled='
                     (?:                             # Optional(greedy):
                         \{                              # '{'
-                        .+?                             # OneOrMore(ungreedy): Anything except newlines.
+                        (?:                             # OneOrMore(ungreedy):
+                                (?>                         # Either: Atomic group:
+                                    [^B\n]+                     # OneOrMore(greedy): Anything except 'B' or newline.
+                                )
+                            |                               # Or
+                                B                               # 'B'
+                        )+?
                         BookingId\.Hash=                # 'BookingId.Hash='
                         (?<currentID>-?\d+)             # Named group 'currentID' is an int.
                         [^}]+                           # OneOrMore(greedy): Not '}'
@@ -899,7 +917,13 @@ FlagSets:
                     ,\ nextScheduled=               # ', nextScheduled='
                     (?:                             # Optional(greedy):
                         \{                              # '{'
-                        .+?                             # OneOrMore(ungreedy): Anything except newlines.
+                        (?:                             # OneOrMore(ungreedy):
+                                (?>                         # Either: Atomic group:
+                                    [^B\n]+                     # OneOrMore(greedy): Anything except 'B' or newline.
+                                )
+                            |                               # Or
+                                B                               # 'B'
+                        )+?
                         BookingId\.Hash=                # 'BookingId.Hash='
                         (?<nextID>-?\d+)                # Named group 'nextID' is an int.
                     )?
@@ -917,28 +941,40 @@ FlagSets:
                 On: ~Y~A
                 TransitionToOn: '~y~#y#a'
                 OffMatch: 'ConsoleManager +. active=,|ConversationEndingBegin'
-                OnMatch: 'ConsoleManager +. active=\{.+?IsAdhoc=False'
-                TransitionToOnMatch: 'ConsoleManager +. active=\{.+?IsAdhoc=True'
+                OnMatch: 'ConsoleManager +. active=\{(?:(?>[^I\n]+)|I)+?IsAdhoc=False'
+                TransitionToOnMatch: 'ConsoleManager +. active=\{(?:(?>[^I\n]+)|I)+?IsAdhoc=True'
 
             -   Name: ActiveTime
                 TransitionToOnMatch: ConsoleManager|ConversationEndingBegin
                 OnMatch: |
                     (?x)
                     ^                                                       # StartOfLine
-                    (?<now>\d{4}(?:-\d\d){2}\ (?:\d\d:){2}\d\d.\d{4})       # Named group 'now' is the DateTime at the start of the logLine.
+                    (?<now>\d{4}(?:-\d{2}){2}\ (?:\d{2}:){2}\d{2}.\d{4})       # Named group 'now' is the DateTime at the start of the logLine.
                     (?>                                                     # Atomic group:
-                        .+?                                                     # OneOrMore(ungreedy): Anything except newlines.
+                        (?:                                                     # OneOrMore(ungreedy):
+                                (?>                                                 # Either: Atomic group:
+                                    [^C\n]+                                             # OneOrMore(greedy): Anything except 'C' or newline.
+                                )
+                            |                                                       # Or
+                                C                                                       # 'C'
+                        )+?
                         ConsoleManager                                          # 'ConsoleManager'
                         \ +                                                     # OneOrMore(greedy): spaces.
                         .                                                       # Anything except newline.
                     )
                     \ active=                                               # ' active='
                     \{                                                      # '{'
-                    .+?                                                     # OneOrMore(ungreedy): Anything except newlines.
+                    (?:                                                     # OneOrMore(ungreedy):
+                            (?>                                                 # Either: Atomic group:
+                                [^S\n]+                                             # OneOrMore(greedy): Anything except 'S' or newline.
+                            )
+                        |                                                       # Or
+                            S                                                       # 'S'
+                    )+?
                     Start=                                                  # 'Start='
-                    (?<start>(?:\d\d/){2}\d{4}\ (?:\d\d?:){2}\d\d\ [AP]M)   # Named group 'start' is a DateTime.
+                    (?<start>(?:\d{2}/){2}\d{4}\ (?:\d{2}?:){2}\d{2}\ [AP]M)   # Named group 'start' is a DateTime.
                     ,\ End=                                                 # ', End='
-                    (?<end>(?:\d\d/){2}\d{4}\ (?:\d\d?:){2}\d\d\ [AP]M)     # Named group 'end' is a DateTime.
+                    (?<end>(?:\d{2}/){2}\d{4}\ (?:\d{2}?:){2}\d{2}\ [AP]M)     # Named group 'end' is a DateTime.
                 Types:
                     now:    DateTime
                     start:  DateTime
@@ -954,31 +990,49 @@ FlagSets:
                 Off: ~K~C
                 On: ~G~C
                 TransitionToOn: '~G~#y#c'
-                OffMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=,|ConversationEndingBegin'
-                OnMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=\{.+?IsAdhoc=False'
-                TransitionToOnMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=\{.+?IsAdhoc=True'
+                OffMatch: 'ConsoleManager +. active=(\{(?:(?>[^,\n]+)|,)+?)?, currentScheduled=,|ConversationEndingBegin'
+                OnMatch: 'ConsoleManager +. active=(\{(?:(?>[^,\n]+)|,)+?)?, currentScheduled=\{(?:(?>[^I\n]+)|I)+?IsAdhoc=False'
+                TransitionToOnMatch: 'ConsoleManager +. active=(\{(?:(?>[^,\n]+)|,)+?)?, currentScheduled=\{(?:(?>[^I\n]+)|I)+?IsAdhoc=True'
 
             -   Name: CurrentTime
                 TransitionToOnMatch: ConsoleManager|ConversationEndingBegin
                 OnMatch: |
                     (?x)
                     ^                                                       # StartOfLine
-                    (?<now>\d{4}(?:-\d\d){2}\ (?:\d\d:){2}\d\d.\d{4})       # Named group 'now' is the DateTime at the start of the logLine.
+                    (?<now>\d{4}(?:-\d{2}){2}\ (?:\d{2}:){2}\d{2}.\d{4})       # Named group 'now' is the DateTime at the start of the logLine.
                     (?>                                                     # Atomic group:
-                        .+?                                                     # OneOrMore(ungreedy): Anything except newlines.
+                        (?:                                                     # OneOrMore(ungreedy):
+                                (?>                                                 # Either: Atomic group:
+                                    [^C\n]+                                             # OneOrMore(greedy): Anything except 'C' or newline.
+                                )
+                            |                                                       # Or
+                                C                                                       # 'C'
+                        )+?
                         ConsoleManager                                          # 'ConsoleManager'
                         \ +                                                     # OneOrMore(greedy): spaces.
                         .                                                       # Anything except newline.
                     )
                     \ active=                                               # ' active='
-                    (?:\{.+?)?                                              # Optional(greedy): '{'; then OneOrMore(ungreedy): Anything except newlines.
+                    (?:                                                     # OneOrMore(ungreedy):
+                            (?>                                                 # Either: Atomic group:
+                                [^,\n]+                                              # OneOrMore(greedy): Anything except ',' or newline.
+                            )
+                        |                                                       # Or
+                            ,                                                       # ','
+                    )+?
                     (?>,\ currentScheduled=)                                # Atomic group: ' currentScheduled='
                     \{                                                      # '{'
-                    .+?                                                     # OneOrMore(ungreedy): Anything except newlines.
+                    (?:                                                     # OneOrMore(ungreedy):
+                            (?>                                                 # Either: Atomic group:
+                                [^S\n]+                                             # OneOrMore(greedy): Anything except 'S' or newline.
+                            )
+                        |                                                       # Or
+                            S                                                       # 'S'
+                    )+?
                     Start=                                                  # 'Start='
-                    (?<start>(?:\d\d/){2}\d{4}\ (?:\d\d?:){2}\d\d\ [AP]M)   # Named group 'start' is a DateTime.
+                    (?<start>(?:\d{2}/){2}\d{4}\ (?:\d{2}?:){2}\d{2}\ [AP]M)   # Named group 'start' is a DateTime.
                     ,\ End=                                                 # ', End='
-                    (?<end>(?:\d\d/){2}\d{4}\ (?:\d\d?:){2}\d\d\ [AP]M)     # Named group 'end' is a DateTime.
+                    (?<end>(?:\d{2}/){2}\d{4}\ (?:\d{2}?:){2}\d{2}\ [AP]M)     # Named group 'end' is a DateTime.
                 Types:
                     now:    DateTime
                     start:  DateTime
@@ -994,33 +1048,57 @@ FlagSets:
                 Off: ~K~N
                 On: ~M~N
                 TransitionToOn: '~m~#y#n'
-                OffMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=(\{.+?)?, nextScheduled=[^{]|ConversationEndingBegin'
-                OnMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=(\{.+?)?, nextScheduled=\{.+?IsAdhoc=False'
-                TransitionToOnMatch: 'ConsoleManager +. active=(\{.+?)?, currentScheduled=(\{.+?)?, nextScheduled=\{.+?IsAdhoc=True'
+                OffMatch: 'ConsoleManager +. active=(\{(?:(?>[^,\n]+)|,)+?)?, currentScheduled=(\{(?:(?>[^,\n]+)|,)+?)?, nextScheduled=[^{]|ConversationEndingBegin'
+                OnMatch: 'ConsoleManager +. active=(\{(?:(?>[^,\n]+)|,)+?)?, currentScheduled=(\{(?:(?>[^,\n]+)|,)+?)?, nextScheduled=\{(?:(?>[^I\n]+)|I)+?IsAdhoc=False'
+                TransitionToOnMatch: 'ConsoleManager +. active=(\{(?:(?>[^,\n]+)|,)+?)?, currentScheduled=(\{(?:(?>[^,\n]+)|,)+?)?, nextScheduled=\{(?:(?>[^I\n]+)|I)+?IsAdhoc=True'
 
             -   Name: NextTime
                 TransitionToOnMatch: ConsoleManager|ConversationEndingBegin
                 OnMatch: |
                     (?x)
                     ^                                                       # StartOfLine
-                    (?<now>\d{4}(?:-\d\d){2}\ (?:\d\d:){2}\d\d.\d{4})       # Named group 'now' is the DateTime at the start of the logLine.
+                    (?<now>\d{4}(?:-\d{2}){2}\ (?:\d{2}:){2}\d{2}.\d{4})       # Named group 'now' is the DateTime at the start of the logLine.
                     (?>                                                     # Atomic group:
-                        .+?                                                     # OneOrMore(ungreedy): Anything except newlines.
+                        (?:                                                     # OneOrMore(ungreedy):
+                                (?>                                                 # Either: Atomic group:
+                                    [^C\n]+                                             # OneOrMore(greedy): Anything except 'C' or newline.
+                                )
+                            |                                                       # Or
+                                C                                                       # 'C'
+                        )+?
                         ConsoleManager                                          # 'ConsoleManager'
                         \ +                                                     # OneOrMore(greedy): spaces.
                         .                                                       # Anything except newline.
                     )
                     \ active=                                               # ' active='
-                    (?:\{.+?)?                                              # Optional(greedy): '{'; then OneOrMore(ungreedy): Anything except newlines.
+                    (?:                                                     # OneOrMore(ungreedy):
+                            (?>                                                 # Either: Atomic group:
+                                [^,\n]+                                              # OneOrMore(greedy): Anything except ',' or newline.
+                            )
+                        |                                                       # Or
+                            ,                                                       # ','
+                    )+?
                     (?>,\ currentScheduled=)                                # Atomic group: ' currentScheduled='
-                    (?:\{.+?)?                                              # Optional(greedy): '{'; then OneOrMore(ungreedy): Anything except newlines.
+                    (?:                                                     # OneOrMore(ungreedy):
+                            (?>                                                 # Either: Atomic group:
+                                [^,\n]+                                              # OneOrMore(greedy): Anything except ',' or newline.
+                            )
+                        |                                                       # Or
+                            ,                                                       # ','
+                    )+?
                     (?>,\ nextScheduled=)                                   # Atomic group: ' nextScheduled='
                     \{                                                          # '{'
-                    .+?                                                         # OneOrMore(ungreedy): Anything except newlines.
+                    (?:                                                     # OneOrMore(ungreedy):
+                            (?>                                                 # Either: Atomic group:
+                                [^S\n]+                                             # OneOrMore(greedy): Anything except 'S' or newline.
+                            )
+                        |                                                       # Or
+                            S                                                       # 'S'
+                    )+?
                     Start=                                                      # 'Start='
-                    (?<start>(?:\d\d/){2}\d{4}\ (?:\d\d?:){2}\d\d\ [AP]M)   # Named group 'start' is a DateTime.
+                    (?<start>(?:\d{2}/){2}\d{4}\ (?:\d{2}?:){2}\d{2}\ [AP]M)   # Named group 'start' is a DateTime.
                     ,\ End=                                                 # ', End='
-                    (?<end>(?:\d\d/){2}\d{4}\ (?:\d\d?:){2}\d\d\ [AP]M)     # Named group 'end' is a DateTime.
+                    (?<end>(?:\d{2}/){2}\d{4}\ (?:\d{2}?:){2}\d{2}\ [AP]M)     # Named group 'end' is a DateTime.
                 Types:
                     now:    DateTime
                     start:  DateTime
@@ -1042,7 +1120,7 @@ FlagSets:
         Flags:
             -   Name: Count
                 TransitionToOnMatch: '{[A-Za-z0-9_]+} ?/ ?{[A-Za-z0-9_]+}|Finished'
-                OnMatch: '{(?<pos>[A-Za-z0-9_]+)} ?/ ?{(?<count>[A-Za-z0-9_]+)}.+?"\k<pos>":(?<num>\d+), ?"\k<count>":(?<total>\d+)'
+                OnMatch: '{(?<pos>[A-Za-z0-9_]+)} ?/ ?{(?<count>[A-Za-z0-9_]+)}(?:(?>[^"\n]+)|")+?"\k<pos>":(?<num>\d+), ?"\k<count>":(?<total>\d+)'
                 Types:
                     pos:    string
                     count:  string
@@ -1065,7 +1143,7 @@ FlagSets:
 
             -   Name: CountGraph
                 TransitionToOnMatch: '{[A-Za-z0-9_]+} ?/ ?{[A-Za-z0-9_]+}|Finished'
-                OnMatch: '{(?<pos>[A-Za-z0-9_]+)} ?/ ?{(?<count>[A-Za-z0-9_]+)}.+?"\k<pos>":(?<num>\d+), ?"\k<count>":(?<total>\d+)'
+                OnMatch: '{(?<pos>[A-Za-z0-9_]+)} ?/ ?{(?<count>[A-Za-z0-9_]+)}(?:(?>[^"\n]+)|")+?"\k<pos>":(?<num>\d+), ?"\k<count>":(?<total>\d+)'
                 Types:
                     pos:    string
                     count:  string
@@ -1111,7 +1189,7 @@ FlagSets:
 
             -   Name: CountPercent
                 TransitionToOnMatch: '{[A-Za-z0-9_]+} ?/ ?{[A-Za-z0-9_]+}|Finished'
-                OnMatch: '{(?<pos>[A-Za-z0-9_]+)} ?/ ?{(?<count>[A-Za-z0-9_]+)}.+?"\k<pos>":(?<num>\d+), ?"\k<count>":(?<total>\d+)'
+                OnMatch: '{(?<pos>[A-Za-z0-9_]+)} ?/ ?{(?<count>[A-Za-z0-9_]+)}(?:(?>[^"\n]+)|")+?"\k<pos>":(?<num>\d+), ?"\k<count>":(?<total>\d+)'
                 Types:
                     pos:    string
                     count:  string
@@ -1286,15 +1364,15 @@ __shared:
 
     DateRules:
         - Name: Full ISO DateTime 7DP
-          Match: &ISODateRegexF7 '^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d)(\d)(\d)(\d)(\d)(\d)(\d)'
+          Match: &ISODateRegexF7 '^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d)(\d)(\d)(\d)(\d)(\d)(\d)'
           Replace: &ISODateReplaceF7 '%DateYear%$1%DateDash%-%DateMonth%$2%DateDash%-%DateDay%$3%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9%TimeSecsDiv10000%$10%TimeSecsDiv100000%$11%TimeSecsDiv1000000%$12%TimeSecsDiv10000000%$13'
 
         - Name: Full ISO DateTime 4DP
-          Match: &ISODateRegexF4 '^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d)(\d)(\d)(\d)'
+          Match: &ISODateRegexF4 '^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d)(\d)(\d)(\d)'
           Replace: &ISODateReplaceF4 '%DateYear%$1%DateDash%-%DateMonth%$2%DateDash%-%DateDay%$3%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9%TimeSecsDiv10000%$10'
 
         - Name: Full ISO DateTime 3DP UTC
-          Match: &ISODateRegexF3 '^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d)(\d)(\d)Z'
+          Match: &ISODateRegexF3 '^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d)(\d)(\d)Z'
           Replace: &ISODateReplaceF3 '%DateYear%$1%DateDash%-%DateMonth%$2%DateDash%-%DateDay%$3%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9%TimeSecsDiv10000%Z'
 
     ExceptionStackTraceRules: &ExceptionStackTraceRules
@@ -1760,7 +1838,7 @@ RuleSets:
                 Replace: ~Y~$0
 
             -   Name: text
-                Match: '(?s)^(?:~[^~]+~|#[^#]+#)*(?!\d{4}(?:-\d\d){2})[^{].+'
+                Match: '(?s)^(?:~[^~]+~|#[^#]+#)*(?!\d{4}(?:-\d{2}){2})[^{].+'
                 Replace: ~W~$0
 
     -   Name: JSLog
@@ -1878,7 +1956,7 @@ RuleSets:
                 Replace: '$1${JSON.unread%()}'
 
     -   Name: VFXLog
-        RecordStart: '^\d{4}(?:-\d\d){2} (?:\d\d:){2}\d\d.\d{4}'
+        RecordStart: '^\d{4}(?:-\d{2}){2} (?:\d{2}:){2}\d{2}.\d{4}'
         Reset: '\[F\]\[App +\] Version:|RoomScheduleViewModel +. (?:Shutting Down|Restarting) Computer'
         Vars:
             <<: [*CommonVars, *ExceptionWithStackTraceVars]
@@ -1888,11 +1966,11 @@ RuleSets:
         Rules:
             -
                 Name: DateTime
-                Match: '^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d).(\d)(\d)(\d)(\d)'
+                Match: '^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d)(\d)(\d)(\d)'
                 Replace: *ISODateReplaceF4
             #-
             #   Name: Time
-            #   Match: '^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d).(\d)(\d)(\d)(\d)'
+            #   Match: '^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d)(\d)(\d)(\d)'
             #   Replace: '%DateYear%$4%DateDash%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9%TimeSecsDiv10000%$10'
             -
                 Name: ThreadID
@@ -2029,7 +2107,7 @@ RuleSets:
                 Groups:
                     -
                         Name: '1.1'
-                        Match: '^{Booking: Id=(\d+), ConferenceGuid=(?:{[0-9A-F-]+})?, IsAdhoc=(?:(F)alse|(T)rue), Start=(?:\d\d?/){2}\d{4} (\d\d?:\d\d:\d\d [AP])M, End=(?:\d\d?/){2}\d{4} (\d\d?:\d\d:\d\d [AP])M, Subject=([^,\n]+).+?(?:, BookingId\.Hash=(-?\d+).+)?\}?$'
+                        Match: '^{Booking: Id=(\d+), ConferenceGuid=(?:{[0-9A-F-]+})?, IsAdhoc=(?:(F)alse|(T)rue), Start=(?:\d{1,2}/){2}\d{4} (\d{1,2}:\d{2}:\d{2} [AP])M, End=(?:\d{1,2}/){2}\d{4} (\d{1,2}:\d{2}:\d{2} [AP])M, Subject=([^,\n]+)(?:(?>[^,]+)|,)+?(?:, BookingId\.Hash=(-?\d+).+)?\}?$'
                         Replace: '{~<~~B~$1~>~/~<~~R~$7~>~, ~<~~M~AH=$2~B~$3~>~, ~<~~g~$4~>~-~<~~r~$5~>~; $6}'
                     -
                         Name: '1.2'
@@ -2037,7 +2115,7 @@ RuleSets:
                         Replace: ' '
                     -
                         Name: '2.1'
-                        Match: '^{Booking: Id=(\d+), ConferenceGuid=(?:{[0-9A-F-]+})?, IsAdhoc=(?:(F)alse|(T)rue), Start=(?:\d\d?/){2}\d{4} (\d\d?:\d\d:\d\d [AP])M, End=(?:\d\d?/){2}\d{4} (\d\d?:\d\d:\d\d [AP])M, Subject=([^,\n]+).+?(?:, BookingId\.Hash=(-?\d+).+)?\}?$'
+                        Match: '^{Booking: Id=(\d+), ConferenceGuid=(?:{[0-9A-F-]+})?, IsAdhoc=(?:(F)alse|(T)rue), Start=(?:\d{1,2}/){2}\d{4} (\d{1,2}:\d{2}:\d{2} [AP])M, End=(?:\d{1,2}/){2}\d{4} (\d{1,2}:\d{2}:\d{2} [AP])M, Subject=([^,\n]+)(?:(?>[^,]+)|,)+?(?:, BookingId\.Hash=(-?\d+).+)?\}?$'
                         Replace: '{~<~~B~$1~>~/~<~~R~$7~>~, ~<~~M~AH=$2~B~$3~>~, ~<~~g~$4~>~-~<~~r~$5~>~; $6}'
                     -
                         Name: '2.2'
@@ -2045,7 +2123,7 @@ RuleSets:
                         Replace: ' '
                     -
                         Name: '3.1'
-                        Match: '^{Booking: Id=(\d+), ConferenceGuid=(?:{[0-9A-F-]+})?, IsAdhoc=(?:(F)alse|(T)rue), Start=(?:\d\d?/){2}\d{4} (\d\d?:\d\d:\d\d [AP])M, End=(?:\d\d?/){2}\d{4} (\d\d?:\d\d:\d\d [AP])M, Subject=([^,\n]+).+?(?:, BookingId\.Hash=(-?\d+).+)?\}?$'
+                        Match: '^{Booking: Id=(\d+), ConferenceGuid=(?:{[0-9A-F-]+})?, IsAdhoc=(?:(F)alse|(T)rue), Start=(?:\d{1,2}/){2}\d{4} (\d{1,2}:\d{2}:\d{2} [AP])M, End=(?:\d{1,2}/){2}\d{4} (\d{1,2}:\d{2}:\d{2} [AP])M, Subject=([^,\n]+)(?:(?>[^,]+)|,)+?(?:, BookingId\.Hash=(-?\d+).+)?\}?$'
                         Replace: '{~<~~B~$1~>~/~<~~R~$7~>~, ~<~~M~AH=$2~B~$3~>~, ~<~~g~$4~>~-~<~~r~$5~>~; $6}'
                     -
                         Name: '3.2'
@@ -2071,7 +2149,7 @@ RuleSets:
             -
                 Name: StreamingStatusPing
                 Test: StreamingStatusPing
-                Match: 'StreamingStatusPing..stream=(?<prefix>(?:True|False); rec=(?:True|False); FPS=\d+(?:\.\d\d?)?)[^;]+; bitRate=(?<bps>[^ ]+) [^;]+; time=(?<time>[^;]+); frames=(?<frames>[^;]+); dropped=(?<drops>[^;]+); strain=(?<strain>[^%]+)%.. ==> Health = (?<health>.+)'
+                Match: 'StreamingStatusPing..stream=(?<prefix>(?:True|False); rec=(?:True|False); FPS=\d+(?:\.\d{1,2})?)[^;]+; bitRate=(?<bps>[^ ]+) [^;]+; time=(?<time>[^;]+); frames=(?<frames>[^;]+); dropped=(?<drops>[^;]+); strain=(?<strain>[^%]+)%.. ==> Health = (?<health>.+)'
                 Replace: '~c~StreamingStatusPing~!~:live=${prefix} BPS=${bps}; T=${time}; Frames=${frames}~R~-${drops}~!~; ~C~Strain~!~=~Y~${strain}%~!~; ~W~Health~!~=${health}'
                 Groups:
                     -
@@ -2100,14 +2178,14 @@ RuleSets:
                         Replace: ~G~$0
 
     -   Name: LyncLog
-        RecordStart: '^(?:\d\d/){2}\d{4}\|(?:\d\d:){2}\d\d.\d{3} '
+        RecordStart: '^(?:\d{2}/){2}\d{4}\|(?:\d{2}:){2}\d{2}.\d{3} '
         Vars:
             <<: *CommonVars
             ClassName: '#blue#'
         Rules:
             -
                 Name: DateTime
-                Match: '^(\d\d)/(\d\d)/(\d{4})\|(\d\d):(\d\d):(\d\d).(\d)(\d)(\d)'
+                Match: '^(\d{2})/(\d{2})/(\d{4})\|(\d{2}):(\d{2}):(\d{2}).(\d)(\d)(\d)'
                 Replace: '%DateYear%$3%DateDash%-%DateMonth%$1%DateDash%-%DateYear%$2%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9'
             -
                 Name: ClassName
@@ -2122,7 +2200,7 @@ RuleSets:
             - { Name: Fatal,    Test: \bFATAL\b,    Match: .+, Replace: '%Fatal%$0' }
 
     -   Name: OBSLog
-        RecordStart: '^(?:\d\d:){2}\d\d.\d{3}:'
+        RecordStart: '^(?:\d{2}:){2}\d{2}.\d{3}:'
         Vars:
             DateDash: ''
             TimeColon:  ~BLACK~
@@ -2145,7 +2223,7 @@ RuleSets:
         Rules:
             -
                 Name: DateTime
-                Match: '^(\d\d):(\d\d):(\d\d).(\d)(\d)(\d):'
+                Match: '^(\d{2}):(\d{2}):(\d{2}).(\d)(\d)(\d):'
                 Replace: '%TimeHours%$1%TimeColon%:%TimeMins%$2%TimeColon%:%TimeSecs%$3%TimeDot%.%TimeSecsDiv10%$4%TimeSecsDiv100%$5%TimeSecsDiv1000%$6%TimeColon%:'
 
             -
@@ -2173,17 +2251,17 @@ RuleSets:
 
             -
                 Name: StreamConnecting
-                Test: rtmp stream:.+?Connecting to RTMP
+                Test: 'rtmp stream:(?:(?>[^C\n]+)|C)+?Connecting to RTMP'
                 Match: .+
                 Replace: '%Warn%$0'
             -
                 Name: StreamConnected
-                Test: rtmp stream:.+?Connection to rtmp.+successful
+                Test: 'rtmp stream:(?:(?>[^C\n]+)|C)+?Connection to rtmp.+successful'
                 Match: .+
                 Replace: ~G~$0
             -
                 Name: StreamDisconnected
-                Test: rtmp stream:.+?Disconnected from rtmp
+                Test: 'rtmp stream:(?:(?>[^D\n]+)|D)+?Disconnected from rtmp'
                 Match: .+
                 Replace: '%Fatal%$0'
             -
@@ -2217,7 +2295,7 @@ RuleSets:
                 Replace: ~M~\
 
     -   Name: RFXLog
-        RecordStart: '\d\d-...-\d{4} (?:\d\d:){2}\d\d.\d{3}'
+        RecordStart: '\d{2}-...-\d{4} (?:\d{2}:){2}\d{2}.\d{3}'
         Reset: BookingViewModel is starting up
         Vars:
             <<: [*CommonVars, *ExceptionWithStackTraceVars]
@@ -2227,7 +2305,7 @@ RuleSets:
         Rules:
             -
                 Name: DateTime
-                Match: ^(\d\d)-(...)-(\d\d\d\d) (\d\d):(\d\d):(\d\d).(\d)(\d)(\d)
+                Match: '^(\d{2})-(...)-(\d{4}) (\d{2}):(\d{2}):(\d{2}).(\d)(\d)(\d)'
                 Replace: '%DateYear%$3%DateDash%-%DateMonth%$2%DateDash%-%DateDay%$1%DateSuffixSpace% %TimeHours%$4%TimeColon%:%TimeMins%$5%TimeColon%:%TimeSecs%$6%TimeDot%.%TimeSecsDiv10%$7%TimeSecsDiv100%$8%TimeSecsDiv1000%$9'
             -
                 Name: ClassName
@@ -2339,7 +2417,7 @@ RuleSets:
                                 Groups:
                                     -
                                         Name: 0.noFF
-                                        Match: ^(?!.+?fast-forward).+
+                                        Match: ^(?!(?:(?>[^f\n]+)|f)+?fast-forward).+
                                         Replace: ''
                                     -
                                         Name: 0.shorter
@@ -2455,7 +2533,7 @@ RuleSets:
                 Replace: '%From%$1 %Url%$2%Company%$3%Url%/%Project%$4'
             -
                 Name: Branch
-                Match: '^ (?<type>.) (?:(?<newDel>\[[^]]+])|(?<move>[\da-f]+\.+\S+))(?<w1>\s+)(?<name>\S+)(?<w2>\s+)-> (?<origin>origin/)?(?<remoteName>.+?)(?<forced>\(forced.+)?$'
+                Match: '^ (?<type>.) (?:(?<newDel>\[[^]]+])|(?<move>[\da-f]+\.+\S+))(?<w1>\s+)(?<name>\S+)(?<w2>\s+)-> (?<origin>origin/)?(?<remoteName>(?:(?>[^(\n]+)|\()+?)(?<forced>\(forced.+)?$'
                 Replace: ' ${type} ${newDel}${move}${w1}%Name%${name}${w2}%Arrow%-> %Origin%${origin}%RemoteName%${remoteName}${forced}'
                 Groups:
                     - { Name: type.0, Match: '\*', Replace: '%NewBranch%$0' }
@@ -2540,7 +2618,13 @@ RuleSets:
                                     .+                  # OneOrMore(greedy): anything except newlines
                                     \|                  # '|'
                                     (?!                 # NegativeLookahead: - fail to match if what follows is:
-                                        .+?                 # OneOrMore(lazy): anything except newlines
+                                        (?:                 # OneOrMore(ungreedy):
+                                                (?>             # Either: Atomic group:
+                                                    [^d\n]+         # OneOrMore(greedy): Anything except 'd' or newline.
+                                                )
+                                            |                   # Or
+                                                d                   # 'd'
+                                        )+?
                                         done                # 'done'
                                         \.                  # '.'
                                         $                   # EndOfLine

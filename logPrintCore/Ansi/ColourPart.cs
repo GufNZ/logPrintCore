@@ -121,6 +121,9 @@ internal abstract class ColourPart : Part, IEquatable<ColourPart> {
 	protected internal bool HasBackground => isForeground != true;
 
 
+	private readonly StringBuilder _builder = new();
+
+
 	public override bool MergeWith(Part previous, out Part merged) {
 		if (previous is TextPart or PushPart or PopPart) {
 			merged = null!;
@@ -149,31 +152,33 @@ internal abstract class ColourPart : Part, IEquatable<ColourPart> {
 	}
 
 	public override string ToAnsi() {
-		var builder = new StringBuilder(PREFIX);
+		_builder.Clear().Append(PREFIX);
+
 		if (HasForeground) {
-			builder.Append(ToAnsiPart(FOREGROUND_FIELD, currentForeground));
+			_builder.Append(ToAnsiPart(FOREGROUND_FIELD, currentForeground));
 			if (HasBackground) {
-				builder.Append(JOINER);
+				_builder.Append(JOINER);
 			}
 		}
 
 		if (HasBackground) {
-			builder.Append(ToAnsiPart(BACKGROUND_FIELD, currentBackground));
+			_builder.Append(ToAnsiPart(BACKGROUND_FIELD, currentBackground));
 		}
 
-		builder.Append(SUFFIX);
-		return builder.ToString();
+		_builder.Append(SUFFIX);
+		return _builder.ToString();
 	}
 
 	public override void ToConsole(TextWriter writer) {
-		var builder = new StringBuilder();
+		_builder.Clear();
+
 		if (HasForeground) {
 			if (currentForeground.A == IS_BYTE) {
 				Console.ForegroundColor = (currentForeground.R == ANSI_RESET_COLOUR)
 					? (ConsoleColor)defaultForeground
 					: ansiToConsoleColorMap[currentForeground.R];
 			} else {
-				builder.Append(ToAnsiPart(FOREGROUND_FIELD, currentForeground));
+				_builder.Append(ToAnsiPart(FOREGROUND_FIELD, currentForeground));
 			}
 		}
 
@@ -183,16 +188,16 @@ internal abstract class ColourPart : Part, IEquatable<ColourPart> {
 					? (ConsoleColor)defaultBackground
 					: ansiToConsoleColorMap[currentBackground.R];
 			} else {
-				if (builder.Length > 0) {
-					builder.Append(JOINER);
+				if (_builder.Length > 0) {
+					_builder.Append(JOINER);
 				}
 
-				builder.Append(ToAnsiPart(BACKGROUND_FIELD, currentBackground));
+				_builder.Append(ToAnsiPart(BACKGROUND_FIELD, currentBackground));
 			}
 		}
 
-		if (builder.Length > 0) {
-			writer.Write($"{PREFIX}{builder}{SUFFIX}");
+		if (_builder.Length > 0) {
+			writer.Write($"{PREFIX}{_builder}{SUFFIX}");
 		}
 	}
 

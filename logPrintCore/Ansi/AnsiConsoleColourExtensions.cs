@@ -62,6 +62,10 @@ internal static partial class AnsiConsoleColourExtensions {
 	private static readonly Pool<PushPart> pushPartPool;
 	private static readonly Pool<PopPart> popPartPool;
 
+	private static readonly StringBuilder parseBuilder = new();
+	private static readonly StringBuilder colouriseBuilder = new();
+
+
 	static AnsiConsoleColourExtensions() {
 		try {
 			OutputWidth = Console.WindowWidth;
@@ -114,13 +118,32 @@ internal static partial class AnsiConsoleColourExtensions {
 
 
 	public static string? EscapeColourCodeChars(this string? line) {
-		const string FG = "~";
-		const string BG = "#";
-		const string FG2 = "~~";
-		const string BG2 = "##";
-		return line
-			?.Replace(FG, FG2)
-			.Replace(BG, BG2);
+		if (line == null) {
+			return null;
+		}
+
+
+		var tildeCount = line.Occurrences(FOREGROUND);
+		var hashCount = line.Occurrences(BACKGROUND);
+
+		if (tildeCount == 0 && hashCount == 0) {
+			return line;	// Fast path: no escaping needed.
+		}
+
+
+		return string.Create(
+			line.Length + tildeCount + hashCount,
+			line,
+			(span, str) => {
+				int destIndex = 0;
+				foreach (var c in str) {
+					span[destIndex++] = c;
+					if (c == FOREGROUND || c == BACKGROUND) {
+						span[destIndex++] = c;	// Duplicate.
+					}
+				}
+			}
+		);
 	}
 
 
@@ -261,17 +284,17 @@ internal static partial class AnsiConsoleColourExtensions {
 			debugAssembly = false;
 
 			return parts!.Aggregate(
-				new StringBuilder(),
+				colouriseBuilder.Clear(),
 				debugAssembly
-					? (builder, part) => {
+					? (sb, part) => {
 						Return(part);
-						return builder.Append(part.ToAnsi().Dump());
+						return sb.Append(part.ToAnsi().Dump());
 					}
-					: (builder, part) => {
+					: (sb, part) => {
 						Return(part);
-						return builder.Append(part.ToAnsi());
+						return sb.Append(part.ToAnsi());
 					},
-				builder => builder.ToString()
+				sb => sb.ToString()
 			);
 		}
 	}
@@ -291,7 +314,7 @@ internal static partial class AnsiConsoleColourExtensions {
 
 		var sawColourCodes = false;
 
-		var currentText = new StringBuilder();
+		parseBuilder.Clear();
 
 		static Func<string> LazyCalculateLocation(int index, string str) {
 			return () => {
@@ -335,15 +358,15 @@ internal static partial class AnsiConsoleColourExtensions {
 				case FOREGROUND:
 					j = text.IndexOf(FOREGROUND, i);
 					if (j == -1 || j == i) {
-						currentText.Append(c);
+						parseBuilder.Append(c);
 						i++;
 					} else {
 						sawColourCodes = true;
-						if (currentText.Length > 0) {
-							yield return textPartPool.Rent().Init(currentText.ToString());
+						if (parseBuilder.Length > 0) {
+							yield return textPartPool.Rent().Init(parseBuilder.ToString());
 
 
-							currentText.Clear();
+							parseBuilder.Clear();
 						}
 
 
@@ -371,15 +394,15 @@ internal static partial class AnsiConsoleColourExtensions {
 				case BACKGROUND:
 					j = text.IndexOf(BACKGROUND, i);
 					if (j == -1 || j == i) {
-						currentText.Append(c);
+						parseBuilder.Append(c);
 						i++;
 					} else {
 						sawColourCodes = true;
-						if (currentText.Length > 0) {
-							yield return textPartPool.Rent().Init(currentText.ToString());
+						if (parseBuilder.Length > 0) {
+							yield return textPartPool.Rent().Init(parseBuilder.ToString());
 
 
-							currentText.Clear();
+							parseBuilder.Clear();
 						}
 
 
@@ -405,14 +428,14 @@ internal static partial class AnsiConsoleColourExtensions {
 					break;
 
 				default:
-					currentText.Append(c);
+					parseBuilder.Append(c);
 					break;
 			}
 		}
 
 
-		if (currentText.Length > 0) {
-			yield return textPartPool.Rent().Init(currentText.ToString());
+		if (parseBuilder.Length > 0) {
+			yield return textPartPool.Rent().Init(parseBuilder.ToString());
 		}
 
 

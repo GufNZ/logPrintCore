@@ -1,9 +1,8 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 
 // {Ctrl+M, O} is your friend...
@@ -14,17 +13,17 @@ using System.Text.RegularExpressions;
 
 namespace logPrintCore.Utils;
 
-internal static class StringExtensions {
+internal static partial class StringExtensions {
 	extension<T>(T thing)
 		where T : struct {
 		public T? NullIfDefault() {
-			return Equals(thing, default)
+			return EqualityComparer<T>.Default.Equals(thing, default)
 				? null
 				: thing;
 		}
 
 		public T? NullIf(T nullWhen) {
-			return Equals(thing, nullWhen)
+			return EqualityComparer<T>.Default.Equals(thing, nullWhen)
 				? null
 				: thing;
 		}
@@ -60,13 +59,34 @@ internal static class StringExtensions {
 		public string? SafeTrim(params char[]? chars) {
 			return str?.Trim(chars);
 		}
+		public string? SafeTrim(ReadOnlySpan<char> chars) {
+			if (str == null) {
+				return null;
+			}
+
+
+			return chars.IsEmpty
+				? str.Trim()
+				: str.Trim(chars).ToString();
+		}
 
 		public string? TrimToNull(params char[]? chars) {
 			return str?.Trim(chars).NullIfEmpty();
 		}
+		public string? TrimToNull(ReadOnlySpan<char> chars) {
+			if (str == null) {
+				return null;
+			}
+
+
+			var trimmed = chars.IsEmpty
+				? str.Trim()
+				: str.Trim(chars).ToString();
+			return trimmed.NullIfEmpty();
+		}
 
 		public bool FuzzyContains(string substr, StringComparison stringComparison) {
-			return ((str?.IndexOf(substr, stringComparison) ?? -1) != -1);
+			return str?.Contains(substr, stringComparison) ?? false;
 		}
 
 		/// <summary>Like <see cref="string.Concat(IEnumerable{string})"/> except that if any part is null, the entire result is null.</summary>
@@ -74,86 +94,132 @@ internal static class StringExtensions {
 		/// <returns>The concatenated result, or null.</returns>
 		/// <example>var greeting = "Hello ".RCoalesce(FirstName, "!") ?? "Hi,";</example>
 		public string? RCoalesce(params ReadOnlySpan<string?> parts) {
-			List<string?> all = [str];
+			if (str == null) {
+				return null;
+			}
 
-			all.AddRange(parts);
 
-			return all.Any(s => s == null)
-				? null
-				: string.Concat(all);
+			if (parts.Length == 0) {
+				return str;
+			}
+
+
+			foreach (var part in parts) {
+				if (part == null) {
+					return null;
+				}
+			}
+
+
+			Span<string> allParts = new string[parts.Length + 1];
+
+			allParts[0] = str;
+			// ReSharper disable once BadListLineBreaks
+			for (int i = 0, j = 1; i < parts.Length;
+				i++, j++) {
+				allParts[j] = parts[i]!;
+			}
+
+			return string.Concat(allParts);
 		}
 	}
 
 
 	private static readonly MethodInfo stringGetNonRandomizedHashCode = typeof(string).GetMethod("GetNonRandomizedHashCode", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
+	private static readonly Func<string, int> getStableHashCodeFunc =
+		(Func<string, int>)Delegate.CreateDelegate(
+			typeof(Func<string, int>),
+			stringGetNonRandomizedHashCode
+		);
+
+	[GeneratedRegex(@"(?<esc>\\)?\\(?<ch>.)")]
+	private static partial Regex FindEscapesRE();
+
+	private const string UNESCAPE_CHARS = "abefnrtv0\\";
+	private static readonly string[] unescapeReplaces = ["\a", "\b", "\e", "\f", "\n", "\r", "\t", "\v", "\0", "\\"];
 
 	extension(string str) {
 		public string Unescape(params (string oldValue, string newValue)[] replacements) {
 			// ReSharper disable once StringLiteralTypo
-			const string CHARS = "abefnrtv0\\";
-			const string REPLACES = "\a\b\e\f\n\r\t\v\0\\";
-			return Regex.Replace(
-				str,
-				@"(?<esc>\\)?\\(?<ch>.)",
-				match => {
-					if (match.Groups["esc"].Success) {
-						return match.Value[1..];
+			return FindEscapesRE()
+				.Replace(
+					str,
+					match => {
+						if (match.Groups["esc"].Success) {
+							return match.Value[1..];
+						}
+
+
+						var index = UNESCAPE_CHARS.IndexOf(match.Groups["ch"].Value, StringComparison.Ordinal);
+						if (index > -1) {
+							return unescapeReplaces[index];
+						}
+
+
+						// ReSharper disable once LoopCanBePartlyConvertedToQuery
+						foreach (var pair in replacements) {
+							if (pair.oldValue == match.Groups["ch"].Value) {
+								return pair.newValue;
+							}
+						}
+
+
+						return match.Value;
 					}
-
-
-					var index = CHARS.IndexOf(match.Groups["ch"].Value, StringComparison.Ordinal);
-					if (index > -1) {
-						return REPLACES[index].ToString();
-					}
-
-
-					var other = replacements
-						.FirstOrDefault(pair => pair.oldValue == match.Groups["ch"].Value)
-						.NullIfDefault();
-
-					return other?.newValue ?? match.Value;
-				}
-			);
+				);
 		}
 
 		public int GetStableHashCode() {
-			return (int)stringGetNonRandomizedHashCode.Invoke(str, [])!;
+			return getStableHashCodeFunc(str);
 		}
 
 		public int Occurrences(char item) {
 			return str.AsSpan().Occurrences(item);
 		}
-
 		public int Occurrences(params ReadOnlySpan<char> items) {
+			return str.AsSpan().Occurrences(items);
+		}
+		public int Occurrences(SearchValues<char> items) {
 			return str.AsSpan().Occurrences(items);
 		}
 	}
 
-
 	extension(ReadOnlySpan<char> str) {
 		public int Occurrences(char item) {
 			int count = 0;
+			int offset = 0;
 			int index;
-			while ((index = str.IndexOf(item)) >= 0) {
+			while ((index = str[offset..].IndexOf(item)) >= 0) {
 				count++;
-				str = str[(index + 1)..];
+				offset += index + 1;
 			}
 
 			return count;
 		}
 		public int Occurrences(params ReadOnlySpan<char> items) {
 			int count = 0;
+			int offset = 0;
 			int index;
-			while ((index = str.IndexOfAny(items)) >= 0) {
+			while ((index = str[offset..].IndexOfAny(items)) >= 0) {
 				count++;
-				str = str[(index + 1)..];
+				offset += index + 1;
+			}
+
+			return count;
+		}
+		public int Occurrences(SearchValues<char> items) {
+			int count = 0;
+			int offset = 0;
+			int index;
+			while ((index = str[offset..].IndexOfAny(items)) >= 0) {
+				count++;
+				offset += index + 1;
 			}
 
 			return count;
 		}
 	}
-
 
 	extension(string? str) {
 		#region Integers
@@ -164,7 +230,9 @@ internal static class StringExtensions {
 				: null;
 		}
 		public byte TryParseByte(byte defaultValue, NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
-			return str.TryParseByte(numberStyle, formatProvider) ?? defaultValue;
+			return byte.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out byte value)
+				? value
+				: defaultValue;
 		}
 
 		public short? TryParseShort(NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
@@ -173,7 +241,9 @@ internal static class StringExtensions {
 				: null;
 		}
 		public short TryParseShort(short defaultValue, NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
-			return str.TryParseShort(numberStyle, formatProvider) ?? defaultValue;
+			return short.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out short value)
+				? value
+				: defaultValue;
 		}
 
 		public ushort? TryParseUShort(NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
@@ -182,7 +252,9 @@ internal static class StringExtensions {
 				: null;
 		}
 		public ushort TryParseUShort(ushort defaultValue, NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
-			return str.TryParseUShort(numberStyle, formatProvider) ?? defaultValue;
+			return ushort.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out ushort value)
+				? value
+				: defaultValue;
 		}
 
 		public int? TryParseInt(NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
@@ -191,7 +263,9 @@ internal static class StringExtensions {
 				: null;
 		}
 		public int TryParseInt(int defaultValue, NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
-			return str.TryParseInt(numberStyle, formatProvider) ?? defaultValue;
+			return int.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out int value)
+				? value
+				: defaultValue;
 		}
 
 		public uint? TryParseUInt(NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
@@ -200,7 +274,9 @@ internal static class StringExtensions {
 				: null;
 		}
 		public uint TryParseUInt(uint defaultValue, NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
-			return str.TryParseUInt(numberStyle, formatProvider) ?? defaultValue;
+			return uint.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out uint value)
+				? value
+				: defaultValue;
 		}
 
 		public long? TryParseLong(NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
@@ -209,7 +285,9 @@ internal static class StringExtensions {
 				: null;
 		}
 		public long TryParseLong(long defaultValue, NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
-			return str.TryParseLong(numberStyle, formatProvider) ?? defaultValue;
+			return long.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out long value)
+				? value
+				: defaultValue;
 		}
 
 		public ulong? TryParseULong(NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
@@ -218,29 +296,35 @@ internal static class StringExtensions {
 				: null;
 		}
 		public ulong TryParseULong(ulong defaultValue, NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
-			return str.TryParseULong(numberStyle, formatProvider) ?? defaultValue;
+			return ulong.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out ulong value)
+				? value
+				: defaultValue;
 		}
 
 		#endregion
 
 		#region Floating Point
 
-		public float? TryParseFloat(NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
+		public float? TryParseFloat(NumberStyles numberStyle = NumberStyles.Float, IFormatProvider? formatProvider = null) {
 			return float.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out float value)
 				? value
 				: null;
 		}
 		public float TryParseFloat(float defaultValue, NumberStyles numberStyle = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? formatProvider = null) {
-			return str.TryParseFloat(numberStyle, formatProvider) ?? defaultValue;
+			return float.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out float value)
+				? value
+				: defaultValue;
 		}
 
-		public double? TryParseDouble(NumberStyles numberStyle = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
+		public double? TryParseDouble(NumberStyles numberStyle = NumberStyles.Float, IFormatProvider? formatProvider = null) {
 			return double.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out double value)
 				? value
 				: null;
 		}
 		public double TryParseDouble(double defaultValue, NumberStyles numberStyle = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? formatProvider = null) {
-			return str.TryParseDouble(numberStyle, formatProvider) ?? defaultValue;
+			return double.TryParse(str, numberStyle, formatProvider ?? NumberFormatInfo.CurrentInfo, out double value)
+				? value
+				: defaultValue;
 		}
 
 		#endregion
@@ -254,7 +338,9 @@ internal static class StringExtensions {
 				: null;
 		}
 		public TimeSpan TryParseTimeSpan(TimeSpan defaultValue, IFormatProvider? formatProvider = null) {
-			return str.TryParseTimeSpan(formatProvider) ?? defaultValue;
+			return TimeSpan.TryParse(str, formatProvider, out TimeSpan value)
+				? value
+				: defaultValue;
 		}
 
 		public DateTimeOffset? TryParseDateTimeOffset(IFormatProvider? formatProvider = null, DateTimeStyles dateTimeStyles = DateTimeStyles.None) {
@@ -263,7 +349,9 @@ internal static class StringExtensions {
 				: null;
 		}
 		public DateTimeOffset TryParseDateTimeOffset(DateTimeOffset defaultValue, IFormatProvider? formatProvider = null, DateTimeStyles dateTimeStyles = DateTimeStyles.None) {
-			return str.TryParseDateTimeOffset(formatProvider, dateTimeStyles) ?? defaultValue;
+			return DateTimeOffset.TryParse(str, formatProvider, dateTimeStyles, out DateTimeOffset value)
+				? value
+				: defaultValue;
 		}
 
 		public DateTime? TryParseDateTime(IFormatProvider? formatProvider = null, DateTimeStyles dateTimeStyles = DateTimeStyles.None) {
@@ -272,7 +360,9 @@ internal static class StringExtensions {
 				: null;
 		}
 		public DateTime TryParseDateTime(DateTime defaultValue, IFormatProvider? formatProvider = null, DateTimeStyles dateTimeStyles = DateTimeStyles.None) {
-			return str.TryParseDateTime(formatProvider, dateTimeStyles) ?? defaultValue;
+			return DateTime.TryParse(str, formatProvider, dateTimeStyles, out DateTime value)
+				? value
+				: defaultValue;
 		}
 
 		public DateTime? TryParseDateTimeExact(string format, IFormatProvider? formatProvider = null, DateTimeStyles style = DateTimeStyles.None) {
@@ -286,10 +376,14 @@ internal static class StringExtensions {
 				: null;
 		}
 		public DateTime TryParseDateTimeExact(DateTime defaultValue, string format, IFormatProvider? formatProvider = null, DateTimeStyles dateTimeStyles = DateTimeStyles.None) {
-			return str.TryParseDateTimeExact(format, formatProvider, dateTimeStyles) ?? defaultValue;
+			return DateTime.TryParseExact(str, format, formatProvider ?? NumberFormatInfo.CurrentInfo, dateTimeStyles, out DateTime value)
+				? value
+				: defaultValue;
 		}
 		public DateTime TryParseDateTimeExact(DateTime defaultValue, string[] formats, IFormatProvider? formatProvider = null, DateTimeStyles dateTimeStyles = DateTimeStyles.None) {
-			return str.TryParseDateTimeExact(formats, formatProvider, dateTimeStyles) ?? defaultValue;
+			return DateTime.TryParseExact(str, formats, formatProvider ?? NumberFormatInfo.CurrentInfo, dateTimeStyles, out DateTime value)
+				? value
+				: defaultValue;
 		}
 	}
 
