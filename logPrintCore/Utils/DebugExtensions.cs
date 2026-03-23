@@ -11,9 +11,6 @@ using logPrintCore.Config.Flags;
 namespace logPrintCore.Utils;
 
 internal static class DebugExtensions {
-	private static readonly ReferenceEqualityComparer<object?> referenceEqualityComparer = new();
-
-
 	// ReSharper disable once MemberCanBePrivate.Global
 	// ReSharper disable once UnusedMethodReturnValue.Global
 	public static IEnumerable<T>? DumpList<T>(
@@ -99,7 +96,7 @@ internal static class DebugExtensions {
 
 
 		history ??= new();
-		if (history.Contains(thing, referenceEqualityComparer)) {
+		if (history.Contains(thing, ReferenceEqualityComparer<object?>.Instance)) {
 			Console.Error.WriteLineColours($"{prefix}{titleStr}~R~#y#<Circular>");
 			return thing;
 		}
@@ -122,6 +119,7 @@ internal static class DebugExtensions {
 				in thing!
 					.GetType()
 					.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+					.Where(propertyInfo => !propertyInfo.PropertyType.IsByRefLike)
 					.Where(propertyInfo => (propFilter ?? ((_, _) => true))(thing.GetType(), propertyInfo))
 					.Where(propertyInfo => propertyInfo.GetMethod?.GetParameters().Length == 0)
 			) {

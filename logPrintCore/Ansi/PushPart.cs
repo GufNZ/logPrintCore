@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 
@@ -7,7 +6,7 @@ using logPrintCore.Utils;
 
 namespace logPrintCore.Ansi;
 
-internal sealed class PushPart : ColourPart, IEquatable<PushPart>, IRentable<PushPart> {
+internal sealed class PushPart : ColourPart, IEquatable<PushPart>, IRentable {
 	private static readonly Color pushMarker = Color.FromArgb(IS_BYTE, 0xF0, 0, 0);
 	private static readonly Color unsetMarker = Color.FromArgb(IS_BYTE, 0xCC, 0, 0);
 
@@ -30,9 +29,6 @@ internal sealed class PushPart : ColourPart, IEquatable<PushPart>, IRentable<Pus
 
 	public Color pushedForeground = unsetMarker;
 	public Color pushedBackground = unsetMarker;
-
-
-	public LinkedListNode<PushPart>? Node { get; set; }
 
 
 	public override bool MergeWith(Part previous, out Part merged) {

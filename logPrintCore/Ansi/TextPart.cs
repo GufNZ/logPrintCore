@@ -1,12 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 using logPrintCore.Utils;
 
 namespace logPrintCore.Ansi;
 
-internal sealed class TextPart : Part, IEquatable<TextPart>, IRentable<TextPart> {
+internal sealed class TextPart : Part, IEquatable<TextPart>, IRentable {
 	public string text = null!;
 
 
@@ -23,8 +22,6 @@ internal sealed class TextPart : Part, IEquatable<TextPart>, IRentable<TextPart>
 		return new();
 	}
 
-
-	public LinkedListNode<TextPart>? Node { get; set; }
 #if DEBUG
 	// ReSharper disable once UnusedMember.Global
 	public string Here { get; set; } = null!;
@@ -70,7 +67,8 @@ internal sealed class TextPart : Part, IEquatable<TextPart>, IRentable<TextPart>
 
 	public override int GetHashCode() {
 		// ReSharper disable once NonReadonlyMemberInGetHashCode - Effectively readonly except that this can be rented from a Pool, so needs Init.
-		return text.GetHashCode();
+		// ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
+		return text?.GetHashCode() ?? 0;
 	}
 
 	public static bool operator==(TextPart? left, TextPart? right) {

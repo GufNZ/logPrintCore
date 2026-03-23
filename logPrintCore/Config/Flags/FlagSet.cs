@@ -19,8 +19,7 @@ internal class FlagSet {
 	private event StateChangeCallback? OnReset;
 
 
-	private static readonly ReferenceEqualityComparer<FlagSet> comparer = new();
-	private static readonly Utils.OrderedDictionary<FlagSet, string> trackedIDs = new(comparer);
+	private static readonly Utils.OrderedDictionary<FlagSet, string> trackedIDs = new(ReferenceEqualityComparer<FlagSet>.Instance);
 
 
 	private bool _wasReset;
@@ -91,7 +90,7 @@ internal class FlagSet {
 				line = "";
 
 				// ReSharper disable once InvertIf
-				if (gotID && trackedIDs.IndexOfKey(this) == trackedIDs.Count - 1 && Others.IndexOf(this, comparer) == Others.Count - 1) {
+				if (gotID && trackedIDs.IndexOfKey(this) == trackedIDs.Count - 1 && Others.IndexOf(this, ReferenceEqualityComparer<FlagSet>.Instance) == Others.Count - 1) {
 					Console.Out.WriteLineColours(
 						$"#Y#~M~>>> ~R~Warning:#y# ~r~New ID (~Y~{
 							matchedID

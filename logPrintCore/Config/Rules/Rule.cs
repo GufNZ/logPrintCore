@@ -1,5 +1,5 @@
 #if DEBUG
-//#define DEBUG_MATCHING
+//B#define DEBUG_MATCHING
 #endif
 
 using System;
@@ -34,7 +34,10 @@ internal partial class Rule {
 		nameof(Name),
 		nameof(Test),
 		nameof(Match),
-		nameof(SubRules)
+		nameof(SubRules),
+		nameof(Parse),
+		nameof(Repeat),
+		nameof(Push),
 	}.Contains(p.Name);
 
 	private readonly Func<Type, PropertyInfo, bool> _recurseFilter = (_, p) => p.Name == nameof(SubRules);
@@ -77,15 +80,22 @@ internal partial class Rule {
 
 	private Rule? Parent { get; set; }
 
-	private List<Rule> SubRules =>
-		Groups
-			.Select(
-				rule => {
-					rule.Parent = this;
-					return rule;
-				}
-			)
-			.ToList();
+	private List<Rule> SubRules {
+		get {
+			if (field != null) {
+				return field;
+			}
+
+
+			field = new List<Rule>(Groups.Length);
+			foreach (var rule in Groups) {
+				rule.Parent = this;
+				field.Add(rule);
+			}
+
+			return field;
+		}
+	}
 
 	private List<ReplacePart> ProcessedReplace {
 		get {
@@ -94,38 +104,48 @@ internal partial class Rule {
 			}
 
 
-			field = [];
+			var replaceSpan = Replace.AsSpan();
+			field = new(replaceSpan.Occurrences('$') + 1);
+
 			var i = 0;
-			var j = Replace.IndexOf('$');
+			var j = replaceSpan.IndexOf('$');
 			while (j != -1) {
 				if (i < j) {
-					field.Add(new(Replace[i..j]));
+					field.Add(new(replaceSpan[i..j].ToString()));
 				}
 
-				if (Replace[j + 1] == '{') {
+				if (replaceSpan[j + 1] == '{') {
 					i = j + 2;
-					j = Replace.IndexOf('}', i);
-					var substring = Replace[i..j];
+
+					var closeBraceIndex = replaceSpan[i..].IndexOf('}');
+					j = (closeBraceIndex == -1)
+						? -1
+						: i + closeBraceIndex;
+
+					var substring = replaceSpan[i..j];
 					field.Add(
 						(Parse != ParseType.None && substring.StartsWith("JSON.", StringComparison.Ordinal))
-							? new JsonReplacePart(substring)
-							: new ReplacePart(substring, isGroup: true)
+							? new JsonReplacePart(substring.ToString())
+							: new ReplacePart(substring.ToString(), isGroup: true)
 					);
 
 					i = j + 1;
 				} else {
 					j = i = j + 1;
-					while (++j < Replace.Length && Replace[j] >= '0' && Replace[j] <= '9') { }
+					while (++j < replaceSpan.Length && replaceSpan[j] >= '0' && replaceSpan[j] <= '9') { }
 
-					field.Add(new(int.Parse(Replace[i..j])));
+					field.Add(new(int.Parse(replaceSpan[i..j])));
 					i = j;
 				}
 
-				j = Replace.IndexOf('$', i);
+				var nextDollarIndex = replaceSpan[i..].IndexOf('$');
+				j = (nextDollarIndex == -1)
+					? -1
+					: i + nextDollarIndex;
 			}
 
-			if (i < Replace.Length) {
-				field.Add(new(Replace[i..]));
+			if (i < replaceSpan.Length) {
+				field.Add(new(replaceSpan[i..].ToString()));
 			}
 
 #if DEBUG_MATCHING
@@ -135,6 +155,10 @@ internal partial class Rule {
 			return field;
 		}
 	}
+
+
+	private readonly StringBuilder _resultBuilder = new();
+	private readonly StringBuilder _jsonBuilder = new();
 
 
 	public Rule ProcessVars(IDictionary<string, string?> vars) {
@@ -280,7 +304,7 @@ internal partial class Rule {
 	}
 
 	private string ProcessMatch(Match match) {
-		var result = new StringBuilder();
+		_resultBuilder.Clear();
 #if DEBUG_MATCHING
 		match.Dump("match", true, (_, p) => new[] { "Success", "Groups", "Name", "Value" }.Contains(p.Name), (_, p) => p.Name == "Groups");
 #endif
@@ -290,20 +314,22 @@ internal partial class Rule {
 #endif
 			switch (part) {
 				case JsonReplacePart jsonReplacePart:
-					result.Append(ProcessGroup(FormatJson(jsonReplacePart.evaluate(_json, match), jsonReplacePart.compactJson), part.groupName!));
+					FormatJson(jsonReplacePart.evaluate(_json, match), jsonReplacePart.compactJson);
+					_resultBuilder.Append(ProcessGroup(_jsonBuilder.ToString(), part.groupName!));
+					_jsonBuilder.Clear();
 					break;
 
 				case { groupName: not null }:
-					result.Append(ProcessGroup(match.Groups[part.groupName], part.groupName));
+					_resultBuilder.Append(ProcessGroup(match.Groups[part.groupName], part.groupName));
 					break;
 
 				case { groupNumber: not null }:
 					// ReSharper disable once ArgumentsStyleOther
-					result.Append(ProcessGroup(match.Groups[part.groupNumber.Value], part.groupNumber.Value.ToString()));
+					_resultBuilder.Append(ProcessGroup(match.Groups[part.groupNumber.Value], part.groupNumber.Value.ToString()));
 					break;
 
 				default:
-					result.Append(part.text);
+					_resultBuilder.Append(part.text);
 					break;
 			}
 		}
@@ -313,9 +339,9 @@ internal partial class Rule {
 #endif
 		return Push
 			? AnsiConsoleColourExtensions.PUSH_COLOURS
-				.RCoalesce(result.ToString().NullIfEmpty(), AnsiConsoleColourExtensions.POP_COLOURS)
+				.RCoalesce(_resultBuilder.ToString().NullIfEmpty(), AnsiConsoleColourExtensions.POP_COLOURS)
 			?? ""
-			: result.ToString();
+			: _resultBuilder.ToString();
 	}
 
 	private string ProcessGroup(Group matchGroup, string name) {
@@ -328,16 +354,23 @@ internal partial class Rule {
 	}
 
 	private string ProcessGroup(string str, string name) {
-		return SubRules
-			.Where(rule => rule.Name.Split('.').First() == name)
-			.Aggregate(
-				str,
-				(value, subRule) => subRule
-					.Process(value)
+		foreach (var subRule in SubRules) {
+			var dotIndex = subRule.Name.IndexOf('.');
+			var firstName = dotIndex == -1
+				? subRule.Name
+				: subRule.Name.Substring(0, dotIndex);
+
+			if (firstName == name) {
+				str = subRule.Process(str)
 #if DEBUG_MATCHING
 					.Dump("groupResult")!
 #endif
-			);
+					;
+			}
+		}
+
+
+		return str;
 	}
 
 
@@ -362,9 +395,9 @@ internal partial class Rule {
 	}
 
 
-	private string FormatJson(JToken? jToken, JsonStyle style, bool coloursSimpleValues = false, string indent = "") {
+	private void FormatJson(JToken? jToken, JsonStyle style, bool coloursSimpleValues = false, string indent = "") {
 		if (jToken == null) {
-			return "";
+			return;
 		}
 
 
@@ -376,14 +409,13 @@ internal partial class Rule {
 			? indent + (_jsonLookup["Indent"] ?? "\t")
 			: "";
 
-		var sb = new StringBuilder();
-
 		// ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault - see default case trivia
 		switch (jToken.Type) {
 			case JTokenType.Object:
-				sb.Append(AnsiConsoleColourExtensions.PUSH_COLOURS).Append(_jsonLookup["Brace"]).Append('{');
+				_jsonBuilder.Append(AnsiConsoleColourExtensions.PUSH_COLOURS).Append(_jsonLookup["Brace"]).Append('{');
 
-				var props = ((JObject)jToken).Properties().ToList();
+				var propsEnumerable = ((JObject)jToken).Properties();
+				var props = propsEnumerable as IList<JProperty> ?? propsEnumerable.ToList();
 				if (props.Any()) {
 					if (style == JsonStyle.CompactUnlessComplex && props.Count > 1) {
 						newStyle = JsonStyle.Expanded;
@@ -392,23 +424,24 @@ internal partial class Rule {
 
 					var expanded = (style == JsonStyle.Expanded || style == JsonStyle.CompactUnlessComplex && newStyle == JsonStyle.Expanded);
 					if (expanded) {
-						sb.Append(_jsonLookup["Newline"]);
+						_jsonBuilder.Append(_jsonLookup["Newline"]);
 					}
 
 					for (var i = 0; i < props.Count; i++) {
 						JProperty jProperty = props[i];
-						sb.Append(newIndent)
+						_jsonBuilder.Append(newIndent)
 							.Append(_jsonLookup["Prop"])
 							.Append(jProperty.Name)
 							.Append(
 								expanded
 									? _jsonLookup["Colon"]
 									: _jsonLookup["Colon"]?.TrimEnd()
-							)
-							.Append(FormatJson(jProperty.Value, newStyle, coloursSimpleValues: true, newIndent));
+							);
+
+						FormatJson(jProperty.Value, newStyle, coloursSimpleValues: true, newIndent);
 
 						if (i < props.Count - 1) {
-							sb.Append(
+							_jsonBuilder.Append(
 								expanded
 									? _jsonLookup["Comma"]
 									: _jsonLookup["Comma"]?.TrimEnd()
@@ -416,23 +449,24 @@ internal partial class Rule {
 						}
 
 						if (expanded) {
-							sb.Append(_jsonLookup["Newline"]);
+							_jsonBuilder.Append(_jsonLookup["Newline"]);
 						}
 					}
 
-					sb.Append(indent).Append(_jsonLookup["Brace"]);
+					_jsonBuilder.Append(indent).Append(_jsonLookup["Brace"]);
 				} else if (!coloursSimpleValues) {
-					return "{}";
+					_jsonBuilder.Append("{}");
+					return;
 				}
 
 
-				sb.Append('}').Append(AnsiConsoleColourExtensions.POP_COLOURS);
+				_jsonBuilder.Append('}').Append(AnsiConsoleColourExtensions.POP_COLOURS);
 				break;
 
 			case JTokenType.Array:
-				sb.Append(AnsiConsoleColourExtensions.PUSH_COLOURS).Append(_jsonLookup["Bracket"]).Append('[');
+				_jsonBuilder.Append(AnsiConsoleColourExtensions.PUSH_COLOURS).Append(_jsonLookup["Bracket"]).Append('[');
 
-				var arr = ((JArray)jToken).ToList();
+				var arr = ((JArray)jToken);
 				if (arr.Any()) {
 					if (style == JsonStyle.CompactUnlessComplex && arr.Count > 1) {
 						newStyle = JsonStyle.Expanded;
@@ -441,32 +475,34 @@ internal partial class Rule {
 
 					var expanded = (style == JsonStyle.Expanded || style == JsonStyle.CompactUnlessComplex && newStyle == JsonStyle.Expanded);
 					if (expanded) {
-						sb.Append(_jsonLookup["Newline"]);
+						_jsonBuilder.Append(_jsonLookup["Newline"]);
 					}
 
 					for (var i = 0; i < arr.Count; i++) {
-						sb.Append(newIndent)
-							.Append(FormatJson(arr[i], newStyle, coloursSimpleValues: true, newIndent));
+						_jsonBuilder.Append(newIndent);
+
+						FormatJson(arr[i], newStyle, coloursSimpleValues: true, newIndent);
 
 						if (i < arr.Count - 1) {
-							sb.Append(expanded
+							_jsonBuilder.Append(expanded
 								? _jsonLookup["Comma"]
 								: _jsonLookup["Comma"]?.TrimEnd()
 							);
 						}
 
 						if (expanded) {
-							sb.Append(_jsonLookup["Newline"]);
+							_jsonBuilder.Append(_jsonLookup["Newline"]);
 						}
 					}
 
-					sb.Append(indent).Append(_jsonLookup["Bracket"]);
+					_jsonBuilder.Append(indent).Append(_jsonLookup["Bracket"]);
 				} else if (!coloursSimpleValues) {
-					return "[]";
+					_jsonBuilder.Append("[]");
+					return;
 				}
 
 
-				sb.Append(']').Append(AnsiConsoleColourExtensions.POP_COLOURS);
+				_jsonBuilder.Append(']').Append(AnsiConsoleColourExtensions.POP_COLOURS);
 				break;
 
 			case JTokenType.Integer:
@@ -510,23 +546,23 @@ internal partial class Rule {
 		}
 
 
-		return sb.ToString();
+		return;
 
 
 		void ConditionalFormat(string? format) {
 			if (coloursSimpleValues) {
-				sb.Append(AnsiConsoleColourExtensions.PUSH_COLOURS).Append(format);
+				_jsonBuilder.Append(AnsiConsoleColourExtensions.PUSH_COLOURS).Append(format);
 			}
 
-			sb.Append(jToken);
+			_jsonBuilder.Append(jToken);
 
 			if (coloursSimpleValues) {
-				sb.Append(AnsiConsoleColourExtensions.POP_COLOURS);
+				_jsonBuilder.Append(AnsiConsoleColourExtensions.POP_COLOURS);
 			}
 		}
 
 		void AlwaysFormat(string? format) {
-			sb.Append(AnsiConsoleColourExtensions.PUSH_COLOURS).Append(format).Append(jToken).Append(AnsiConsoleColourExtensions.POP_COLOURS);
+			_jsonBuilder.Append(AnsiConsoleColourExtensions.PUSH_COLOURS).Append(format).Append(jToken).Append(AnsiConsoleColourExtensions.POP_COLOURS);
 		}
 	}
 
@@ -648,17 +684,61 @@ internal partial class Rule {
 				jsonPath = match.Groups[jsonPath[1..]].Value;
 			}
 
-			return jsonPath
-				.Split('.')
-				.Select(
-					p => p.Split('[')
-						.Select(q => q.EndsWith("]", StringComparison.Ordinal)
-							? '[' + q
-							: q
-						)
-				)
-				.SelectMany(x => x)
-				.ToList();
+			var result = new List<string>();
+			var pathSpan = jsonPath.AsSpan();
+
+			var dotIndex = 0;
+			while (dotIndex < pathSpan.Length) {
+				var nextDot = pathSpan[dotIndex..].IndexOf('.');
+				var segmentSpan = (nextDot == -1)
+					? pathSpan[dotIndex..]
+					: pathSpan[dotIndex..(dotIndex + nextDot)];
+
+				var bracketIndex = 0;
+				while (bracketIndex < segmentSpan.Length) {
+					var nextBracket = segmentSpan[bracketIndex..].IndexOf('[');
+					if (nextBracket == -1) {
+						if (bracketIndex < segmentSpan.Length) {
+							result.Add(segmentSpan[bracketIndex..].ToString());
+						}
+
+						break;
+					}
+
+
+					if (nextBracket > 0) {
+						result.Add(segmentSpan[bracketIndex..(bracketIndex + nextBracket)].ToString());
+					}
+
+					bracketIndex += nextBracket + 1;
+					var nextBracketOrEnd = segmentSpan[bracketIndex..].IndexOf('[');
+					var partSpan = (nextBracketOrEnd == -1)
+						? segmentSpan[bracketIndex..]
+						: segmentSpan[bracketIndex..(bracketIndex + nextBracketOrEnd)];
+
+					if (partSpan.Length > 0 && partSpan[^1] == ']') {
+						result.Add('[' + partSpan.ToString());
+					} else if (partSpan.Length > 0) {
+						result.Add(partSpan.ToString());
+					}
+
+					if (nextBracketOrEnd == -1) {
+						break;
+					}
+
+
+					bracketIndex += nextBracketOrEnd;
+				}
+
+				if (nextDot == -1) {
+					break;
+				}
+
+
+				dotIndex += nextDot + 1;
+			}
+
+			return result;
 		}
 
 		private static JToken? JsonPath(JToken? json, IReadOnlyList<string> path, bool allowMissing, bool remove = false) {

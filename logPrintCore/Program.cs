@@ -167,7 +167,7 @@ internal static partial class Program {
 			@out.WriteColours($"~W~#R#{exception.GetType().Name}: ", resetAtEnd: false);
 		}
 
-		@out.Write(exception);
+		@out.WriteColours($"#R#~W~{exception}", resetAtEnd: false);
 		//NOTE: YamlDotNet exceptions override ToString, hiding any InnerException details!.
 		if (exception is YamlException { InnerException: not null } yx) {
 			@out.Write($"{Environment.NewLine}-> {yx.InnerException}");

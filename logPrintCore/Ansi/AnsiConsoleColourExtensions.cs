@@ -123,16 +123,14 @@ internal static partial class AnsiConsoleColourExtensions {
 		}
 
 
-		var tildeCount = line.Occurrences(FOREGROUND);
-		var hashCount = line.Occurrences(BACKGROUND);
-
-		if (tildeCount == 0 && hashCount == 0) {
-			return line;	// Fast path: no escaping needed.
+		var escapeCount = line.Occurrences(FOREGROUND, BACKGROUND);
+		if (escapeCount == 0) {
+			return line;
 		}
 
 
 		return string.Create(
-			line.Length + tildeCount + hashCount,
+			line.Length + escapeCount,
 			line,
 			(span, str) => {
 				int destIndex = 0;

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 
@@ -7,7 +6,7 @@ using logPrintCore.Utils;
 
 namespace logPrintCore.Ansi;
 
-internal sealed class ResetPart : ColourPart, IRentable<ResetPart> {
+internal sealed class ResetPart : ColourPart, IRentable {
 	internal const string RESET_ALL = $"{PREFIX}0{SUFFIX}";
 
 	private static readonly Color resetMarker = Color.FromArgb(IS_BYTE, ANSI_RESET_COLOUR, 0, 0);
@@ -37,7 +36,4 @@ internal sealed class ResetPart : ColourPart, IRentable<ResetPart> {
 			? base.ToAnsi()
 			: RESET_ALL;
 	}
-
-
-	public LinkedListNode<ResetPart>? Node { get; set; }
 }

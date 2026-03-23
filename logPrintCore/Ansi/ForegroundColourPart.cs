@@ -1,11 +1,10 @@
-using System.Collections.Generic;
 using System.Drawing;
 
 using logPrintCore.Utils;
 
 namespace logPrintCore.Ansi;
 
-internal sealed class ForegroundColourPart : ColourPart, IRentable<ForegroundColourPart> {
+internal sealed class ForegroundColourPart : ColourPart, IRentable {
 	private ForegroundColourPart() { }
 
 
@@ -18,7 +17,4 @@ internal sealed class ForegroundColourPart : ColourPart, IRentable<ForegroundCol
 	public static ForegroundColourPart Create() {
 		return new();
 	}
-
-
-	public LinkedListNode<ForegroundColourPart>? Node { get; set; }
 }

@@ -3,14 +3,13 @@
 #endif
 
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 
 using logPrintCore.Utils;
 
 namespace logPrintCore.Ansi;
 
-internal sealed class PopPart : ColourPart, IRentable<PopPart> {
+internal sealed class PopPart : ColourPart, IRentable {
 	private static readonly Color popMarker = Color.FromArgb(IS_BYTE, 0xF1, 0, 0);
 
 
@@ -31,9 +30,6 @@ internal sealed class PopPart : ColourPart, IRentable<PopPart> {
 	public static PopPart Create() {
 		return new();
 	}
-
-
-	public LinkedListNode<PopPart>? Node { get; set; }
 
 
 	public void Link(PushPart pushPart) {

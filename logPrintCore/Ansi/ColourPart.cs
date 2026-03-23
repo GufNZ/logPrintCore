@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
@@ -30,62 +31,64 @@ internal abstract class ColourPart : Part, IEquatable<ColourPart> {
 
 
 	protected internal static readonly ReadOnlyDictionary<string, byte> CodeToAnsiMap = new Dictionary<string, byte> {
-		{ "k", 0 },
-		{ "black", 0 },
-		{ "r", 1 },
-		{ "red", 1 },
-		{ "g", 2 },
-		{ "green", 2 },
-		{ "y", 3 },
-		{ "yellow", 3 },
-		{ "b", 4 },
-		{ "blue", 4 },
-		{ "m", 5 },
-		{ "magenta", 5 },
-		{ "c", 6 },
-		{ "cyan", 6 },
-		{ "w", 7 },
-		{ "white", 7 },
-
-		{ "!", ANSI_RESET_COLOUR },
-		{ "RESET", ANSI_RESET_COLOUR },
-
-		{ "K", 0 | BRIGHT_BIT },
-		{ "BLACK", 0 | BRIGHT_BIT },
-		{ "R", 1 | BRIGHT_BIT },
-		{ "RED", 1 | BRIGHT_BIT },
-		{ "G", 2 | BRIGHT_BIT },
-		{ "GREEN", 2 | BRIGHT_BIT },
-		{ "Y", 3 | BRIGHT_BIT },
-		{ "YELLOW", 3 | BRIGHT_BIT },
-		{ "B", 4 | BRIGHT_BIT },
-		{ "BLUE", 4 | BRIGHT_BIT },
-		{ "M", 5 | BRIGHT_BIT },
-		{ "MAGENTA", 5 | BRIGHT_BIT },
-		{ "C", 6 | BRIGHT_BIT },
-		{ "CYAN", 6 | BRIGHT_BIT },
-		{ "W", 7 | BRIGHT_BIT },
-		{ "WHITE", 7 | BRIGHT_BIT }
-	}.AsReadOnly();
+			{ "k", 0 },
+			{ "black", 0 },
+			{ "r", 1 },
+			{ "red", 1 },
+			{ "g", 2 },
+			{ "green", 2 },
+			{ "y", 3 },
+			{ "yellow", 3 },
+			{ "b", 4 },
+			{ "blue", 4 },
+			{ "m", 5 },
+			{ "magenta", 5 },
+			{ "c", 6 },
+			{ "cyan", 6 },
+			{ "w", 7 },
+			{ "white", 7 },
+			{ "!", ANSI_RESET_COLOUR },
+			{ "RESET", ANSI_RESET_COLOUR },
+			{ "K", 0 | BRIGHT_BIT },
+			{ "BLACK", 0 | BRIGHT_BIT },
+			{ "R", 1 | BRIGHT_BIT },
+			{ "RED", 1 | BRIGHT_BIT },
+			{ "G", 2 | BRIGHT_BIT },
+			{ "GREEN", 2 | BRIGHT_BIT },
+			{ "Y", 3 | BRIGHT_BIT },
+			{ "YELLOW", 3 | BRIGHT_BIT },
+			{ "B", 4 | BRIGHT_BIT },
+			{ "BLUE", 4 | BRIGHT_BIT },
+			{ "M", 5 | BRIGHT_BIT },
+			{ "MAGENTA", 5 | BRIGHT_BIT },
+			{ "C", 6 | BRIGHT_BIT },
+			{ "CYAN", 6 | BRIGHT_BIT },
+			{ "W", 7 | BRIGHT_BIT },
+			{ "WHITE", 7 | BRIGHT_BIT }
+		}
+		.ToFrozenDictionary()
+		.AsReadOnly();
 
 	private static readonly ReadOnlyDictionary<byte, ConsoleColor> ansiToConsoleColorMap = new Dictionary<byte, ConsoleColor> {
-		{ 0, ConsoleColor.Black },
-		{ 1, ConsoleColor.DarkRed },
-		{ 2, ConsoleColor.DarkGreen },
-		{ 3, ConsoleColor.DarkYellow },
-		{ 4, ConsoleColor.DarkBlue },
-		{ 5, ConsoleColor.DarkMagenta },
-		{ 6, ConsoleColor.DarkCyan },
-		{ 7, ConsoleColor.Gray },
-		{ 0 | BRIGHT_BIT, ConsoleColor.DarkGray },
-		{ 1 | BRIGHT_BIT, ConsoleColor.Red },
-		{ 2 | BRIGHT_BIT, ConsoleColor.Green },
-		{ 3 | BRIGHT_BIT, ConsoleColor.Yellow },
-		{ 4 | BRIGHT_BIT, ConsoleColor.Blue },
-		{ 5 | BRIGHT_BIT, ConsoleColor.Magenta },
-		{ 6 | BRIGHT_BIT, ConsoleColor.Cyan },
-		{ 7 | BRIGHT_BIT, ConsoleColor.White }
-	}.AsReadOnly();
+			{ 0, ConsoleColor.Black },
+			{ 1, ConsoleColor.DarkRed },
+			{ 2, ConsoleColor.DarkGreen },
+			{ 3, ConsoleColor.DarkYellow },
+			{ 4, ConsoleColor.DarkBlue },
+			{ 5, ConsoleColor.DarkMagenta },
+			{ 6, ConsoleColor.DarkCyan },
+			{ 7, ConsoleColor.Gray },
+			{ 0 | BRIGHT_BIT, ConsoleColor.DarkGray },
+			{ 1 | BRIGHT_BIT, ConsoleColor.Red },
+			{ 2 | BRIGHT_BIT, ConsoleColor.Green },
+			{ 3 | BRIGHT_BIT, ConsoleColor.Yellow },
+			{ 4 | BRIGHT_BIT, ConsoleColor.Blue },
+			{ 5 | BRIGHT_BIT, ConsoleColor.Magenta },
+			{ 6 | BRIGHT_BIT, ConsoleColor.Cyan },
+			{ 7 | BRIGHT_BIT, ConsoleColor.White }
+		}
+		.ToFrozenDictionary()
+		.AsReadOnly();
 
 	private static readonly Dictionary<ConsoleColor, byte> consoleColorToAnsiMap = ansiToConsoleColorMap.ToDictionary(pair => pair.Value, pair => pair.Key);
 
