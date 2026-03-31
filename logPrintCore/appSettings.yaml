@@ -2525,8 +2525,12 @@ RuleSets:
                     - { Name: 2.Progress, Match: '\d+% \(\d+/\d+\)(?:(?:\e\[K)?$|[^,])', Replace: '$0\r\e[A' }
             -
                 Name: Fatal
-                Match: '^fatal:.+'
+                Match: '^(Aborting|fatal:.+)'
                 Replace: '#R#~W~$0'
+            -
+                Name: Bad
+                Match: '^(Please commit your changes or stash them before you merge\.|error:.+)'
+                Replace: '~$F33~#$600#$0'
             -
                 Name: From
                 Match: '^(From) (\S+/)([^/]+)/(.+)$'
