@@ -314,7 +314,9 @@ internal static partial class Program {
 	}
 
 	private static bool ProcessArgs(string[] args) {
-		AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.Ansi;
+		AnsiConsoleColourExtensions.OutputMode = Console.IsOutputRedirected
+			? ConsoleColourOutputMode.None
+			: ConsoleColourOutputMode.Ansi;
 
 		args = ProcessArgsRepeats();
 
@@ -455,11 +457,30 @@ internal static partial class Program {
 
 
 				case 'A':
+					if (AnsiConsoleColourExtensions.OutputMode == ConsoleColourOutputMode.None) {
+						Console.Error.WriteLineColours($"#R#~Y~-C~W~ already turned off coloured output so configuring it makes no sense!~W~'");
+						argsError = true;
+					}
+
 					AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.ConsoleColor;
 					break;
 
 				case 'a':
+					if (AnsiConsoleColourExtensions.OutputMode == ConsoleColourOutputMode.None) {
+						Console.Error.WriteLineColours($"#R#~Y~-C~W~ already turned off coloured output so configuring it makes no sense!~W~'");
+						argsError = true;
+					}
+
 					AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.Ansi;
+					break;
+
+
+				case 'C':
+					AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.None;
+					break;
+
+				case 'c':
+					AnsiConsoleColourExtensions.OutputMode = AnsiConsoleColourExtensions.OutputMode.NullIfDefault() ?? ConsoleColourOutputMode.Ansi;
 					break;
 
 				case 'e':

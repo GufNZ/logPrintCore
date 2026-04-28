@@ -1,7 +1,7 @@
 namespace logPrintCore.Ansi;
 
 internal enum ConsoleColourOutputMode {
-	ConsoleColor,
 	Ansi,
+	ConsoleColor,
 	None
 }

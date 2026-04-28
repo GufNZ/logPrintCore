@@ -18,6 +18,9 @@ Docs:
             ~c~-A~M~            Output colours using ~c~ConsoleColor~M~ instead of using ~W~ANSI~M~.  ~R~Legacy code path - about ~$F80~5x~R~ slower.
             ~c~-a~M~            Output colours using ~W~ANSI~M~ instead of using ~c~ConsoleColor~M~.  ~Y~This is the default if no ~c~-A~y~/~c~-a~Y~ are supplied.
         
+            ~c~-C~M~            Strip colours from the output.  Other formatting still applies.
+            ~c~-c~M~            Output colours always.  ~Y~Default is to output only if the output is a terminal.
+        
             ~c~-F~M~            Follow - do not exit at ~w~EOF~M~ but rather await more data.  ~Y~Only makes sense when not reading ~C~STDIN~Y~.
             ~c~-FD~M~           Follow Directory - like Follow but if any new file of the same extension arrives in that directory, processing switches to that new file.
                            ~g~Useful for ~w~OBS~g~ which makes a new log file each time it starts.

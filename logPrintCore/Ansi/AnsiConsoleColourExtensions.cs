@@ -182,24 +182,34 @@ internal static partial class AnsiConsoleColourExtensions {
 		// ReSharper disable UnusedMember.Global
 		// ReSharper disable once MemberCanBePrivate.Global
 		public void WriteColours(string? text, bool? resetAtEnd = null) {
-			if (OutputMode == ConsoleColourOutputMode.Ansi) {
-				writer.Write(text.Colourise(resetAtEnd));
-				return;
-			}
+			switch (OutputMode) {
+				case ConsoleColourOutputMode.None:
+					writer.Write(text.StripColourCodes());
+					return;
 
+				case ConsoleColourOutputMode.Ansi:
+					writer.Write(text.Colourise(resetAtEnd));
+					return;
 
-			var parts = Normalise(Parse(text, resetAtEnd)).ToList();
-			if (debugAssembly) {
-				var debug = debugAssembly;
-				using var _ = Deferred.Defer(() => debugAssembly = debug);
-				debugAssembly = false;
+				case ConsoleColourOutputMode.ConsoleColor:
+					var parts = Normalise(Parse(text, resetAtEnd)).ToList();
+					if (debugAssembly) {
+						var debug = debugAssembly;
+						using var _ = Deferred.Defer(() => debugAssembly = debug);
+						debugAssembly = false;
 
-				parts.DumpList(multiLine: true);
-			}
+						parts.DumpList(multiLine: true);
+					}
 
-			foreach (var part in parts) {
-				part.ToConsole(writer);
-				Return(part);
+					foreach (var part in parts) {
+						part.ToConsole(writer);
+						Return(part);
+					}
+
+					return;
+
+				default:
+					throw new ArgumentOutOfRangeException(nameof(OutputMode), OutputMode, $"Unhandled OutputMode: '{OutputMode}'");
 			}
 		}
 		public void WriteColours(bool? resetAtEnd = null, string? format = null, params ReadOnlySpan<object> args) {
