@@ -153,7 +153,7 @@ internal static partial class Program {
 					}
 				}
 
-				@out.WriteLineColours($"#M#~W~{yamlException.Message} at line {yamlException.Start.Line + 1}, column {yamlException.Start.Column + 1}:");
+				@out.WriteLineColours($"#M#~W~{yamlException.Message.EscapeColourCodeChars()} at line {yamlException.Start.Line + 1}, column {yamlException.Start.Column + 1}:");
 				@out.WriteColours($"~Y~{configFile[startIndex..(int)yamlException.Start.Index].EscapeColourCodeChars()}");
 				if (yamlException.Start.Index == yamlException.End.Index) {
 					@out.WriteColours($"#r#~Y~{$"{configFile[(int)yamlException.Start.Index]}".EscapeColourCodeChars()}");
@@ -164,13 +164,13 @@ internal static partial class Program {
 				}
 			}
 
-			@out.WriteColours($"~W~#R#{exception.GetType().Name}: ", resetAtEnd: false);
+			@out.WriteColours($"~W~#R#{exception.GetType().Name.EscapeColourCodeChars()}: ", resetAtEnd: false);
 		}
 
-		@out.WriteColours($"#R#~W~{exception}", resetAtEnd: false);
+		@out.WriteColours($"#R#~W~{exception.ToString().EscapeColourCodeChars()}", resetAtEnd: false);
 		//NOTE: YamlDotNet exceptions override ToString, hiding any InnerException details!.
 		if (exception is YamlException { InnerException: not null } yx) {
-			@out.Write($"{Environment.NewLine}-> {yx.InnerException}");
+			@out.Write($"{Environment.NewLine}-> {yx.InnerException!.ToString().EscapeColourCodeChars()}");
 		}
 
 		@out.WriteLineColours("~!~#!#");
@@ -182,9 +182,14 @@ internal static partial class Program {
 		try {
 			Run(args);
 		} catch (Exception exception) {
+			if (!Console.IsOutputRedirected && AnsiConsoleColourExtensions.OutputMode == ConsoleColourOutputMode.None) {
+				AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.Ansi;
+			}
+
 			WriteException(exception, Console.Out, 3);
 #if DEBUG
 			if (Console.IsOutputRedirected) {
+				AnsiConsoleColourExtensions.OutputMode = ConsoleColourOutputMode.Ansi;
 				Console.Error.WriteLine(new string('-', 128));
 				WriteException(exception, Console.Error, 3);
 			}

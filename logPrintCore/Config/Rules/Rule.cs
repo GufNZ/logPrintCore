@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Data.SqlTypes;
 using System.Linq;
 #if DEBUG_MATCHING
 using System.Reflection;
@@ -105,47 +106,35 @@ internal partial class Rule {
 
 
 			var replaceSpan = Replace.AsSpan();
-			field = new(replaceSpan.Occurrences('$') + 1);
+			var matches = FindMatchesRE().Matches(Replace)
+				.Where(m => !m.Groups["code"].Success)
+				.ToList();
 
-			var i = 0;
-			var j = replaceSpan.IndexOf('$');
-			while (j != -1) {
-				if (i < j) {
-					field.Add(new(replaceSpan[i..j].ToString()));
+			field = new(matches.Count + 1);
+
+			var lastIndex = 0;
+			foreach (var match in matches) {
+				if (match.Index > lastIndex) {
+					field.Add(new(replaceSpan[lastIndex..match.Index].ToString()));
 				}
 
-				if (replaceSpan[j + 1] == '{') {
-					i = j + 2;
+				lastIndex = match.Index + match.Length;
 
-					var closeBraceIndex = replaceSpan[i..].IndexOf('}');
-					j = (closeBraceIndex == -1)
-						? -1
-						: i + closeBraceIndex;
-
-					var substring = replaceSpan[i..j];
-					field.Add(
-						(Parse != ParseType.None && substring.StartsWith("JSON.", StringComparison.Ordinal))
-							? new JsonReplacePart(substring.ToString())
-							: new ReplacePart(substring.ToString(), isGroup: true)
-					);
-
-					i = j + 1;
+				var num = match.Groups["num"];
+				if (num.Success) {
+					field.Add(new(int.Parse(num.Value)));
 				} else {
-					j = i = j + 1;
-					while (++j < replaceSpan.Length && replaceSpan[j] >= '0' && replaceSpan[j] <= '9') { }
-
-					field.Add(new(int.Parse(replaceSpan[i..j])));
-					i = j;
+					var name = match.Groups["name"].Value;
+					field.Add(
+						(Parse != ParseType.None && name.StartsWith("JSON.", StringComparison.Ordinal))
+							? new JsonReplacePart(name)
+							: new ReplacePart(name, isGroup: true)
+					);
 				}
-
-				var nextDollarIndex = replaceSpan[i..].IndexOf('$');
-				j = (nextDollarIndex == -1)
-					? -1
-					: i + nextDollarIndex;
 			}
 
-			if (i < replaceSpan.Length) {
-				field.Add(new(replaceSpan[i..].ToString()));
+			if (lastIndex < replaceSpan.Length) {
+				field.Add(new(replaceSpan[lastIndex..].ToString()));
 			}
 
 #if DEBUG_MATCHING
@@ -352,13 +341,12 @@ internal partial class Rule {
 			? ProcessGroup(matchGroup.Value, name)
 			: "";
 	}
-
 	private string ProcessGroup(string str, string name) {
 		foreach (var subRule in SubRules) {
 			var dotIndex = subRule.Name.IndexOf('.');
 			var firstName = dotIndex == -1
 				? subRule.Name
-				: subRule.Name.Substring(0, dotIndex);
+				: subRule.Name.Substring(0, dotIndex);//FIXME: R#
 
 			if (firstName == name) {
 				str = subRule.Process(str)
@@ -775,4 +763,7 @@ internal partial class Rule {
 
 	[GeneratedRegex("%([^%]+)%")]
 	private static partial Regex VarReplaceRE();
+
+	[GeneratedRegex(@"(?<code>([~#])[$A-Za-z\d<>!]*\1)|\$(?:\{(?<name>[^}]+)\}|(?<num>\d+))")]
+	private static partial Regex FindMatchesRE();
 }

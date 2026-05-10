@@ -1880,6 +1880,54 @@ RuleSets:
                 Match: *ISODateRegexF3
                 Replace: *ISODateReplaceF3
 
+            -   Name: Event
+                Match: '(?<=: )\[(?<event>[^\]]+)\] (?<message>.+)'
+                Replace: '#w#~K~[~k~#W#${event}~<~#<#~K~#w#]#>#~>~ ${message}'
+                Groups:
+                    -   Name: message.url
+                        Match: '(?<proto>https?)(?<s>://)(?<host>[^/]+)(?<path>/[^?#]*)?(?<query>\?[^#]*)?(?<fragment>#[^;]*)?'
+                        Replace: '#$08F#~R~${proto}~b~${s}~M~${host}~G~${path}~B~${query}~Y~${fragment}'
+                        Groups:
+                            -   Name: query.?
+                                Match: '^.'
+                                Replace: '~R~$0'
+                            -   Name: query.=
+                                Match: '=([^?&]+)'
+                                Replace: '~M~=~C~$1'
+                            -   Name: query.&
+                                Match: '&'
+                                Replace: '~R~$0'
+                            -   Name: query.%
+                                Match: '%..'
+                                Replace: '~$F80~$0'
+                            -   Name: fragment
+                                Match: '^#+'
+                                Replace: '~R~$0'
+    
+
+                    -   Name: event.init
+                        Match: 'init'
+                        Replace: '~W~#B#$0'
+                    -   Name: event.navigate
+                        Match: 'navigate'
+                        Replace: '~W~#$555#$0'
+                    -   Name: event.reload
+                        Match: 'reload'
+                        Replace: '~M~#$555#$0'
+                    -   Name: event.route
+                        Match: 'route'
+                        Replace: '~$F80~#$555#$0'
+                    -   Name: event.load
+                        Match: '^load'
+                        Replace: '~Y~#$555#$0'
+                    -   Name: event.shutdown
+                        Match: '^shutdown'
+                        Replace: '~k~#Y#$0'
+                    -   Name: event.error
+                        Match: 'error'
+                        Replace: '~Y~#R#$0'
+                        Push: false
+
             -   Name: Format
                 Match: '%c(?<text>(?:[^"\\]+|\\.)+)", ?"(?<css>[^"]*)'
                 Replace: '~<~#<#${css}${text}#>#~>~'
