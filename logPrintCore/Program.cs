@@ -68,6 +68,8 @@ internal static partial class Program {
 	internal static string compileTemp = Environment.GetEnvironmentVariable("TEMP") ?? ".";
 	internal static bool forceCompile;
 
+	private static bool printHeader = true;
+
 	private static string? ruleSetName;
 	private static RuleSet? ruleSet;
 	private static RuleSet? timeOutputRuleSet;
@@ -450,8 +452,10 @@ internal static partial class Program {
 						default:
 							Console.Error.WriteLineColours($"#R#~W~Unknown option '~Y~{arg}~W~'");
 							argsError = true;
-							return true;
+							break;
 					}
+
+					break;
 
 
 				case '?':
@@ -459,6 +463,10 @@ internal static partial class Program {
 					Console.Out.WriteLineColours(config.Docs.Usage);
 					return false;
 
+
+				case 'H':
+					printHeader = false;
+					break;
 
 				case 'A':
 					if (AnsiConsoleColourExtensions.OutputMode == ConsoleColourOutputMode.None) {
@@ -1341,6 +1349,11 @@ internal static partial class Program {
 	#endregion
 
 	private static void PrintHeader(string? recordKind, bool isList = false) {
+		if (!printHeader) {
+			return;
+		}
+
+
 #if DEBUG
 		var length = "LogPrintDebug:".Length;
 		const string DEBUG = "~Y~Debug";
