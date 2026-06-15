@@ -114,9 +114,12 @@ internal static partial class StringExtensions {
 			Span<string> allParts = new string[parts.Length + 1];
 
 			allParts[0] = str;
-			// ReSharper disable once BadListLineBreaks
-			for (int i = 0, j = 1; i < parts.Length;
-				i++, j++) {
+			for (
+				// ReSharper disable once BadListLineBreaks
+				int i = 0, j = 1;
+				i < parts.Length;
+				i++, j++
+			) {
 				allParts[j] = parts[i]!;
 			}
 

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Data.SqlTypes;
 using System.Linq;
 #if DEBUG_MATCHING
 using System.Reflection;
@@ -346,7 +345,7 @@ internal partial class Rule {
 			var dotIndex = subRule.Name.IndexOf('.');
 			var firstName = dotIndex == -1
 				? subRule.Name
-				: subRule.Name.Substring(0, dotIndex);//FIXME: R#
+				: subRule.Name[..dotIndex];
 
 			if (firstName == name) {
 				str = subRule.Process(str)

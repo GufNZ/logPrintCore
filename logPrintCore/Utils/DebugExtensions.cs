@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 using logPrintCore.Ansi;
 using logPrintCore.Config.Flags;
@@ -127,16 +128,15 @@ internal static class DebugExtensions {
 					propertyInfo.GetValue(thing)
 						.Dump($"{title}~R~/~y~{propertyInfo.Name}", multiLine: true, propFilter, recurseFilter, prefix, history, escapeColours, stripColours);
 				} else {
+					var linePrefix = $"{prefix}{"~c~[~C~".RCoalesce(title, "~B~.~c~", propertyInfo.Name, "~c~]") ?? $"~B~.~c~{propertyInfo.Name}"} ~B~= ~y~'~W~";
 					Console.Error.WriteLineColours(
 						$"{
-							prefix
+							linePrefix
 						}{
-							"~c~[~C~".RCoalesce(title, "~B~.~c~", propertyInfo.Name, "~c~]") ?? $"~B~.~c~{propertyInfo.Name}"
-						} ~B~= ~y~'~W~{
 							(
 								escapeColours ?? true
-									? propertyInfo.GetValue(thing)?.ToString().EscapeColourCodeChars()
-									: propertyInfo.GetValue(thing)?.ToString()
+									? Try(linePrefix, () => propertyInfo.GetValue(thing)?.ToString().EscapeColourCodeChars())
+									: Try(linePrefix, () => propertyInfo.GetValue(thing)?.ToString())
 							)
 						}~y~'"
 					);
@@ -147,7 +147,27 @@ internal static class DebugExtensions {
 		history.Pop();
 
 		return thing;
+
+
+		static object? Try<TValue>(string linePrefix, Func<TValue> code) {
+			try {
+				return code();
+			} catch (Exception e) {
+				errorBuilder.Clear();
+
+				linePrefix = linePrefix[..(linePrefix.IndexOf('=') - 4)];
+				errorBuilder.Append($"#R#~Y~{e.GetType().FullName}~M~: ~W~{e.Message}");
+				while (e.InnerException != null) {
+					e = e.InnerException;
+					errorBuilder.Append($"#!#\n#r#{linePrefix}~C~ -> #R#~Y~{e.GetType().FullName}~M~: ~W~{e.Message}");
+				}
+
+				return errorBuilder.ToString();
+			}
+		}
 	}
+
+	private static readonly StringBuilder errorBuilder = new();
 
 	private static string? FormatThing<T>(T thing, bool? escapeColours, bool? stripColours, Func<T, object?>? eval = null) {
 		eval ??= x => x;

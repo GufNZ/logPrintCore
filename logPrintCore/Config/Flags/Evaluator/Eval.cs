@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Text.RegularExpressions;
 
@@ -149,7 +150,7 @@ internal sealed class Eval : IValidatableObject {
 	private void GenerateExpression(string code, Flag parent, uint hashCode) {
 		var existingType = AppDomain.CurrentDomain
 			.GetAssemblies()
-			.Select(assembly => assembly.GetType("logPrint.Flags.Evaluator.Evaluator" + hashCode))
+			.Select(assembly => assembly.GetType("logPrintCore.Config.Flags.Evaluator.Evaluator" + hashCode))
 			.FirstOrDefault(type => type != null);
 
 		if (existingType != null) {
@@ -218,21 +219,76 @@ internal sealed class Eval : IValidatableObject {
 		}
 
 
+		var (evaluator, alcWeakRef, failureMessage) = TryLoadEvaluator(path, className);
+		if (failureMessage is null) {
+			_evaluator = evaluator;
+			return;
+		}
+
+
+		// Clear any cached MethodInfo objects that reference types from this assembly.
+		// Keys are in the format: className + fieldName:
+		var keysToRemove = tryParseMethods.Keys.Where(k => k.StartsWith(className, StringComparison.Ordinal)).ToList();
+		foreach (var key in keysToRemove) {
+			tryParseMethods.Remove(key);
+		}
+
+		keysToRemove = parseMethods.Keys.Where(k => k.StartsWith(className, StringComparison.Ordinal)).ToList();
+		foreach (var key in keysToRemove) {
+			parseMethods.Remove(key);
+		}
+
+		_evaluator = null;
+
+		// Force GC to complete the unload and release file handles.
+		// Must run in a separate frame so no local here (or the in-flight exception in TryLoadEvaluator) roots the ALC:
+		WaitForUnload(alcWeakRef);
+
+		if (alcWeakRef.IsAlive) {
+			Console.Error.WriteLineColours("~R~Warning: AssemblyLoadContext didn't unload after GC!");
+		}
+
+		if (Program.forceCompile || !File.Exists(path)) {
+			// Rethrow a fresh exception. We can't `throw;` the original because it would carry Types[] back into our frame and re-root the ALC we just tried to unload:
+			throw new ReflectionTypeLoadException(null, null, failureMessage);
+		}
+
+
+		Program.forceCompile = true;
+		goto retry;
+	}
+
+	// Must be a separate, non-inlined method:
+	//  the JIT keeps locals (including `alc` and the in-flight ReflectionTypeLoadException, whose Types[] references the loaded assembly)
+	//  rooted for the lifetime of the enclosing method/catch frame.
+	// Returning from here is the only reliable way to make those references unreachable before GC runs:
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static (IEvaluator? evaluator, WeakReference alcWeakRef, string? failureMessage) TryLoadEvaluator(string path, string className) {
+		var alc = new AssemblyLoadContext("Evaluators", isCollectible: true);
+		var alcWeakRef = new WeakReference(alc);
 		try {
-			_evaluator = (IEvaluator?)AssemblyLoadContext.Default
+			var evaluator = (IEvaluator?)alc
 				.LoadFromAssemblyPath(path)
 				.GetTypes()
 				.First(t => t.Name == className)
 				.GetConstructor(Type.EmptyTypes)
 				?.Invoke([]);
-		} catch (ReflectionTypeLoadException) {
-			if (Program.forceCompile || !File.Exists(path)) {
-				throw;
-			}
+			return (evaluator, alcWeakRef, null);
+		} catch (ReflectionTypeLoadException ex) {
+			// Capture only the formatted string.
+			// ex itself, ex.Types[], and ex.LoaderExceptions[] all transitively reference the ALC and must NOT escape this frame.
+			var message = ex.ToString();
+			alc.Unload();
+			return (null, alcWeakRef, message);
+		}
+	}
 
-
-			Program.forceCompile = true;
-			goto retry;
+	// Must be a separate, non-inlined method so its only reference to the ALC is the WeakReference passed in - no strong root can survive across the GC calls.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void WaitForUnload(WeakReference alcWeakRef) {
+		for (int i = 0; i < 10 && alcWeakRef.IsAlive; i++) {
+			GC.Collect();
+			GC.WaitForPendingFinalizers();
 		}
 	}
 
@@ -427,7 +483,14 @@ internal sealed class Eval : IValidatableObject {
 
 	private static (string className, string path, (string src, EmitResult)?) CompileEvaluator(string code, string? outputCode, Flag parent, uint hashCode) {
 		var className = $"Evaluator{hashCode}";
-		var fileName = Path.Combine(Program.compileTemp, $"{className}.dll");
+		var fileName = Path.Combine(
+			Program.compileTemp,
+// #if DEBUG
+// 			$"{className}Debug.dll"
+// #else
+			$"{className}.dll"
+// #endif
+		);
 
 		if (File.Exists(fileName) && !Program.forceCompile) {
 			return (className, fileName, null);
@@ -449,15 +512,41 @@ internal sealed class Eval : IValidatableObject {
 					)
 				)
 			)
-			.AddReferences(AppDomain.CurrentDomain.GetAssemblies().Select(a => MetadataReference.CreateFromFile(a.Location)))
+			.AddReferences(
+				AppDomain.CurrentDomain.GetAssemblies()
+					.Where(a => !(string.IsNullOrEmpty(a.Location) || a.IsCollectible))
+					.Select(a => MetadataReference.CreateFromFile(a.Location))
+			)
 			.AddSyntaxTrees(SyntaxFactory.ParseSyntaxTree(src));
 
-		var emitResult =
+		EmitResult emitResult;
+		try {
 #if DEBUG_COMPILE
-			compilation.Emit(fileName, fileName.Replace("dll", "pdb"));
+			emitResult = compilation.Emit(fileName, fileName.Replace("dll", "pdb"));
 #else
 			compilation.Emit(fileName);
 #endif
+		} catch (IOException e) {
+			e.Dump(multiLine: true);
+			var locking = FileUtil.WhoIsLocking(
+				fileName
+#if DEBUG_COMPILE
+				,
+				fileName.Replace("dll", "pdb")
+#endif
+			);
+			locking.DumpList(multiLine: true, propFilter: (_, _) => true);
+			Console.Error.WriteLineColours(
+				$"#Y#~B~[~M~{
+					Environment.ProcessId
+				}~B~]~R~The following processes are locking the file:\n{
+					string.Join("\n", locking.Select(p => $"{p.Id}\t{p.ProcessName}"))
+				}"
+			);
+			throw;
+		}
+
+
 		return (className, fileName, (src, emitResult));
 	}
 
@@ -531,7 +620,7 @@ internal sealed class Eval : IValidatableObject {
 
 	public override string ToString() {
 		return $"{{{
-			GetType().Name
+			nameof(Eval)
 		}: {
 			nameof(When)
 		}={
