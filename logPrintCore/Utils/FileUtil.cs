@@ -37,7 +37,17 @@ public static class FileUtil {
 	);
 
 
-	public static List<Process> WhoIsLocking(params string[] paths) {
+	public static Dictionary<string, List<Process>> WhoIsLockingThese(params string[] paths) {
+		var result = new Dictionary<string, List<Process>>();
+		foreach (var path in paths) {
+			result[path] = WhoIsLockingThis(path);
+		}
+
+		return result;
+	}
+
+	// ReSharper disable once MemberCanBePrivate.Global
+	public static List<Process> WhoIsLockingThis(string path) {
 		var key = Guid.NewGuid().ToString();
 		List<Process> processes = [];
 
@@ -52,6 +62,7 @@ public static class FileUtil {
 			uint pnProcInfo = 0;
 			uint lpdwRebootReasons = RM_REBOOT_REASON_NONE;
 
+			string[] paths = [path];
 			res = RmRegisterResources(handle, (uint)paths.Length, paths, nApplications: 0, rgApplications: null, nServices: 0, rgsServiceNames: null);
 			if (res != 0) {
 				throw new Exception(message: "Could not register resource.");

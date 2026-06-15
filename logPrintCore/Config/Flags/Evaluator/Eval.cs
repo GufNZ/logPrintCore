@@ -526,21 +526,28 @@ internal sealed class Eval : IValidatableObject {
 #else
 			compilation.Emit(fileName);
 #endif
-		} catch (IOException e) {
-			e.Dump(multiLine: true);
-			var locking = FileUtil.WhoIsLocking(
+		} catch (IOException/* e*/) {
+			//e.Dump(multiLine: true);
+			var locking = FileUtil.WhoIsLockingThese(
 				fileName
 #if DEBUG_COMPILE
 				,
 				fileName.Replace("dll", "pdb")
 #endif
 			);
-			locking.DumpList(multiLine: true, propFilter: (_, _) => true);
+			//locking.DumpList(multiLine: true, propFilter: (_, _) => true);
+			var perProcess = locking
+				.SelectMany(kv => kv.Value.Select(p => (proc: p, file: kv.Key)))
+				.GroupBy(x => x.proc.Id)
+				.ToDictionary(
+					g => g.First().proc,
+					g => g.Select(x => x.file).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+				);
 			Console.Error.WriteLineColours(
 				$"#Y#~B~[~M~{
 					Environment.ProcessId
 				}~B~]~R~The following processes are locking the file:\n{
-					string.Join("\n", locking.Select(p => $"{p.Id}\t{p.ProcessName}"))
+					string.Join("\n", perProcess.Select(p => $"{p.Key.Id}\t{p.Key.ProcessName}:\n\t{string.Join("\n\t", p.Value)}"))
 				}"
 			);
 			throw;
