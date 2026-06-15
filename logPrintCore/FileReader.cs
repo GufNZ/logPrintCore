@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading;
 
 using logPrintCore.Ansi;
-using logPrintCore.Utils;
 
 namespace logPrintCore;
 
@@ -99,7 +98,7 @@ internal sealed class FileReader : ILineReader {
 		} while (waitHere);
 
 		if (!_follow) {
-			return _streamReader.ReadLine().RCoalesce(Environment.NewLine);
+			return ((ILineReader)this).ReadNextLine(_streamReader);
 		}
 
 
@@ -115,8 +114,7 @@ internal sealed class FileReader : ILineReader {
 
 		_lastLength = _fileStream.Length;
 
-		var line = _streamReader.ReadLine();
-		return line + Environment.NewLine;
+		return ((ILineReader)this).ReadNextLine(_streamReader);
 	}
 
 

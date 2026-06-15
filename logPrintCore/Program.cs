@@ -1,7 +1,6 @@
 #if DEBUG
 //#define DEBUG_CONFIG_PARSE
 //#define DEBUG_MATCHING
-//#define DEBUG_INPUT
 //#define DEBUG_END
 #endif
 
@@ -43,7 +42,7 @@ internal static partial class Program {
 	internal static readonly List<FlagSet> flagSets = [];
 
 	private static readonly TimeSpan progressThrottle = TimeSpan.FromSeconds(0.5);
-	private static readonly char[] lineBreakChars = Environment.NewLine.ToCharArray();
+	private static readonly char[] lineBreakChars = ['\n', '\r'];
 
 	private static readonly Dictionary<char, TimeSpan> timeScale = new() {
 		{ 'S', TimeSpan.FromSeconds(1) },
@@ -1675,74 +1674,26 @@ internal static partial class Program {
 
 		var accumulated = new StringBuilder();
 		while (!((line = reader.GetNextLine(timeout)) == null || breakForNextFile)) {
-#if DEBUG_INPUT
-			Console.Error.WriteLine("Read got: " + ("'".RCoalesce(line, "'") ?? "null").Replace("\r", @"\r").Replace("\n", @"\n"));
-#endif
 			if (line == "") {
 				// Timed out...
-#if DEBUG_INPUT
-				Console.Error.WriteLine("Read timed out");
-#endif
 				Thread.Sleep(timeout);
 				continue;
 			}
 
 
 			accumulated.Append(line);
-#if DEBUG_INPUT
-			Console.Error.WriteLine("acc => " + accumulated.ToString().Replace("\r", @"\r").Replace("\n", @"\n"));
-#endif
-
 			var output = accumulated.ToString();
-			if (!output.Contains("\n")) {
+			if (!output.ContainsAny(lineBreakChars)) {
 				continue;
 			}
 
 
-#if DEBUG_INPUT
-			Console.Error.WriteLine("Found a line...");
-#endif
-			var parts = LineSplitRE().Match(output);
-#if DEBUG_INPUT
-			parts.Groups[0].Captures.Select(c => c.Value).ToList().Dump("wholeLines", true);
-			parts.Groups[1].Value.Dump("partialLine");
-#endif
-
 			accumulated.Clear();
-#if DEBUG_INPUT
-			Console.Error.WriteLine("clear acc");
-
-#endif
-			if (parts.Groups[0].Success) {
-				accumulated.Append(parts.Groups[1].Value);
-#if DEBUG_INPUT
-				Console.Error.WriteLine("acc += partial: " + parts.Groups[1].Value.Replace("\r", @"\r").Replace("\n", @"\n"));
-#endif
-			}
-
-			foreach (
-				var l
-				in parts.Groups[0]
-					.Captures
-					.Select(capture => capture.Value)
-			) {
-				ProcessAndOutputLine(l);
-			}
+			ProcessAndOutputLine(output);
 		}
 
-#if DEBUG_INPUT
-		Console.Error.WriteLine("Read got: " + ("'".RCoalesce(line, "'") ?? "null").Replace("\r", @"\r").Replace("\n", @"\n"));
-
-#endif
 		if (accumulated.Length > 0) {
-			foreach (
-				var l
-				in accumulated
-					.ToString()
-					.Split(lineBreakChars, StringSplitOptions.RemoveEmptyEntries)
-			) {
-				ProcessAndOutputLine(l);
-			}
+			ProcessAndOutputLine(accumulated.ToString());
 		}
 	}
 
@@ -1755,17 +1706,11 @@ internal static partial class Program {
 		var record = new List<string>();
 
 		while (!((line = reader.GetNextLine(timeout)) == null || breakForNextFile)) {
-#if DEBUG_INPUT
-			Console.Error.WriteLine("Read got: " + ("'".RCoalesce(line, "'") ?? "null").Replace("\r", @"\r").Replace("\n", @"\n"));
-#endif
 			if (line == "") {
 				// Timed out...
-#if DEBUG_INPUT
-				Console.Error.WriteLine("Read timed out; record#=" + record.Count);
-#endif
 				if (record.Count > 0) {
 					var lastLine = record[^1];
-					if (lastLine[^1] != '\n') {
+					if (!(lastLine[^1] == '\r' || lastLine[^1] == '\n')) {
 						continue;
 					}
 
@@ -1783,41 +1728,21 @@ internal static partial class Program {
 
 			var isStartOfNewRecord = ruleSet.RecordStart!.IsMatch(line);
 			if (isStartOfNewRecord && record.Count > 0) {
-#if DEBUG_INPUT
-				Console.Error.WriteLine("New record starts; output last record#=" + record.Count);
-#endif
 				recordBuilder.Clear();
 				ProcessAndOutputLine(record.Aggregate(recordBuilder, (sb, l) => sb.Append(l), sb => sb.ToString()));
 				record.Clear();
 			}
-#if DEBUG_INPUT
-			if (!isStartOfNewRecord) {
-				Console.Error.WriteLine($"broken record; record#={record.Count}; line = '{line.Replace("\r", @"\r").Replace("\n", @"\n")}'");
-			}
-#endif
 
 			if (record.Count == 0) {
-#if DEBUG_INPUT
-				Console.Error.WriteLine($"Add (first) line = '{line.Replace("\r", @"\r").Replace("\n", @"\n")}'");
-#endif
 				record.Add(line);
 			} else {
 				var lastLine = record[^1];
-				if (lastLine[^1] == '\n') {
-#if DEBUG_INPUT
-					Console.Error.WriteLine($"Add line = '{line.Replace("\r", @"\r").Replace("\n", @"\n")}'");
-#endif
+				if (lastLine[^1] == '\n' || lastLine[^1] == '\r') {
 					record.Add(line);
 				} else {
-#if DEBUG_INPUT
-					Console.Error.WriteLine($"Append line = '{line.Replace("\r", @"\r").Replace("\n", @"\n")}'");
-#endif
 					record[^1] += line;
 				}
 			}
-#if DEBUG_INPUT
-			Console.Error.WriteLine($"record# => {record.Count}; line = '{line.Replace("\r", @"\r").Replace("\n", @"\n")}'");
-#endif
 		}
 
 
@@ -1890,18 +1815,18 @@ internal static partial class Program {
 		}
 
 
-		var trimmedLine = line.TrimEnd(lineBreakChars).EscapeColourCodeChars();
+		var escapedLine = line.EscapeColourCodeChars();
 		if (summariseMode && time.HasValue) {
-			SummariseLine(time.Value, ruleSet.Summarise(trimmedLine));
+			SummariseLine(time.Value, ruleSet.Summarise(escapedLine));
 			return;
 		}
 
 
 		string? output;
 		try {
-			output = ruleSet.Process(trimmedLine);
+			output = ruleSet.Process(escapedLine);
 		} catch (JsonReaderException) {
-			Console.Error.WriteLine(trimmedLine);
+			Console.Error.WriteLine(escapedLine);
 			throw;
 		}
 
@@ -1921,7 +1846,7 @@ internal static partial class Program {
 		lastPrintedTime = time;
 		progressDrawn = null;
 		Console.Out.WriteColours(flagsOutput);
-		Console.Out.WriteLineColours(output);
+		Console.Out.WriteColours(output);
 		queriedFlagStateChanged = false;
 
 		switch (stepMode) {
@@ -1938,7 +1863,7 @@ internal static partial class Program {
 				break;
 
 			case StepMode.LineCount:
-				stepProgress += (uint)(output ?? "").Occurrences('\n');
+				stepProgress += (uint)(output ?? "").Occurrences('\n');	// Only count real line breaks, not `\r`.
 				if (stepProgress >= stepCount) {
 					stepProgress = 0U;
 					Pause();
@@ -2098,7 +2023,4 @@ internal static partial class Program {
 
 	[GeneratedRegex(@"^(\d+)x$")]
 	private static partial Regex RepeatMultipleRE();
-
-	[GeneratedRegex(@"^(.+[\n\r]+)*(.+)")]
-	private static partial Regex LineSplitRE();
 }

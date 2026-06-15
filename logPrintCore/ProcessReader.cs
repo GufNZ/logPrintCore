@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
-using logPrintCore.Utils;
-
 namespace logPrintCore;
 
 internal sealed class ProcessReader(Process process, bool redirectStandardError, bool redirectStandardOutput) : ILineReader {
@@ -21,10 +19,7 @@ internal sealed class ProcessReader(Process process, bool redirectStandardError,
 
 	public string? GetNextLine(TimeSpan timeout, int sleep = 100) {
 		string? line = null;
-		var readTask = _reader.ReadLineAsync()
-			.ContinueWith(
-				task => line = task.Result.NullIfEmpty().RCoalesce(Environment.NewLine) ?? task.Result
-			);
+		var readTask = Task.Run(() => line = ((ILineReader)this).ReadNextLine(_reader));
 
 		return (Task.WaitAny([readTask], timeout) == -1)
 			? ""

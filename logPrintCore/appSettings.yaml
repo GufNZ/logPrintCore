@@ -91,6 +91,8 @@ Docs:
                           Summarise the log, printing a marker for each line that falls inside each of the given ~C~TIME_STEP~M~-sized buckets.
                           If ~C~SCALE_FACTOR~M~ is supplied, scale the width of the graph down by that much.
         
+            ~c~-H~M~            Suppress the header print-out.
+        
         ~G~Queries~w~ suppress normal output unless a ~G~query trigger~w~ fires.
         ~Y~Note that more than one type of ~G~query~Y~ is specified, the union of all sets of matching lines is shown.
         ~y~In particular, this means specifying both ~c~-g~y~ & ~c~-gv~y~ may not do what you expect.  More likely, ~c~-gV~y~ is a better operation.
@@ -2572,8 +2574,6 @@ RuleSets:
                 Name: Remote
                 Match: '^(remote:) (.+)'
                 Replace: '%RemotePrefix%$1 %Remote%$2'
-                Groups:
-                    - { Name: 2.Progress, Match: '\d+% \(\d+/\d+\)(?:(?:\e\[K)?$|[^,])', Replace: '$0\r\e[A' }
             -
                 Name: Fatal
                 Match: '^(Aborting|fatal:.+)'
@@ -2652,40 +2652,6 @@ RuleSets:
                 Replace: '%GC%$0'
                 Groups:
                     - { Name: 0.Cruft, Match: 'cruft', Replace: '%Cruft%$0' }
-                    -   Name: 0.Progress
-                        Match: |
-                            (?x)                    # IgnorePatternWhitespace
-                            \d+                     # OneOrMore(greedy): digits
-                            %\ \(                   # '% ('
-                            \d+                     # OneOrMore(greedy): digits
-                            /                       # '/'
-                            \d+                     # OneOrMore(greedy): digits
-                            \)                      # ')'
-                            (?:                     # NonCaptureGroup: Either:
-                                    (?:                 # Optional(NonCaptureGroup):
-                                        \e\[K               # Escape[K (erase to end of line)
-                                    )?
-                                    $
-                                |                   # Or:
-                                    [^,]                # Not a comma
-                                |                   # Or:
-                                    ,                   # ','
-                                    .+                  # OneOrMore(greedy): anything except newlines
-                                    \|                  # '|'
-                                    (?!                 # NegativeLookahead: - fail to match if what follows is:
-                                        (?:                 # OneOrMore(ungreedy):
-                                                (?>             # Either: Atomic group:
-                                                    [^d\n]+         # OneOrMore(greedy): Anything except 'd' or newline.
-                                                )
-                                            |                   # Or
-                                                d                   # 'd'
-                                        )+?
-                                        done                # 'done'
-                                        \.                  # '.'
-                                        $                   # EndOfLine
-                                    )             
-                            )
-                        Replace: '$0\r\e[A'     # $0, CarriageReturn, Escape[A (cursor up one line)
 
     -   Name: RAW
         Rules:

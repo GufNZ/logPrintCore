@@ -7,7 +7,6 @@ using System;
 #if DEBUG_INPUT
 using logPrintCore.Ansi;
 #endif
-using logPrintCore.Utils;
 
 namespace logPrintCore;
 
@@ -23,7 +22,7 @@ internal sealed class ConsoleReader : ILineReader {
 		}
 
 
-		var line = Console.ReadLine().RCoalesce(Environment.NewLine);
+		var line = ((ILineReader)this).ReadNextLine(Console.In);
 #if DEBUG_INPUT
 		Console.Out.WriteLineColours(
 			$"~M~*********** ~Y~Got '{
