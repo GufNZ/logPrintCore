@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using System.Text;
 using System.Text.RegularExpressions;
 
 using JetBrains.Annotations;
@@ -517,14 +518,20 @@ internal sealed class Eval : IValidatableObject {
 					.Where(a => !(string.IsNullOrEmpty(a.Location) || a.IsCollectible))
 					.Select(a => MetadataReference.CreateFromFile(a.Location))
 			)
-			.AddSyntaxTrees(SyntaxFactory.ParseSyntaxTree(src));
+			.AddSyntaxTrees(
+#if DEBUG_COMPILE
+				SyntaxFactory.ParseSyntaxTree(src, path: Path.Combine(Program.compileTemp, $"{className}.cs"), encoding: Encoding.UTF8)
+#else
+				SyntaxFactory.ParseSyntaxTree(src)
+#endif
+			);
 
 		EmitResult emitResult;
 		try {
 #if DEBUG_COMPILE
 			emitResult = compilation.Emit(fileName, fileName.Replace("dll", "pdb"));
 #else
-			compilation.Emit(fileName);
+			emitResult = compilation.Emit(fileName);
 #endif
 		} catch (IOException/* e*/) {
 			//e.Dump(multiLine: true);
