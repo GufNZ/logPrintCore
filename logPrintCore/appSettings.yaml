@@ -1237,11 +1237,12 @@ FlagSets:
         Flags:
             -   Name: Stage
                 TransitionToOnMatch: '^/.+ ~\r?$|%|^~'
-                OnMatch: '^/.+/(?<dir>[^/]+) ~\r?$|(?<pc>\d+)%|^(?<gap>~)'
+                OnMatch: '^/.+/(?<dir>[^/]+) ~\r?$|(?<pc>\d+)%|^(?<gap>~)|(?<skip>^(?!=.*%))'
                 Types:
-                    dir: string?
-                    pc:  string?
-                    gap: string?
+                    dir:  string?
+                    pc:   string?
+                    gap:  string?
+                    skip: string?
                 Fields:
                     - { Name: firstDir, Type: string?,  Value: 'null' }
                     - { Name: state,    Type: int,      Value: 0 }   # Using typeName so `using System;` is not unused.
@@ -1258,7 +1259,7 @@ FlagSets:
                 Methods:
                     -   Name: setState
                         Code: |
-                            if (pc is not null || gap is not null) {
+                            if (pc is not null || gap is not null || skip is not null) {
                                 return;
                             }
                             
@@ -1272,11 +1273,11 @@ FlagSets:
                             firstDir ??= dir;
                             count++;
                 Evals:
-                    - { When: 'gap is not null',            OutputCode: '{LastOutput?.ToLowerInvariant().Replace("~w~", "~K~")}' }
-                    - { When: 'pc is not null && C < 10',   OutputCode: "#g#~W~{new string('=', C)}>{new string(' ', HC)}" }
-                    - { When: 'state == 0',                 OutputCode: '#b#~C~Fetch ~Y~{count,2}~w~/~m~??' }
-                    - { When: 'state == 1',                 OutputCode: '#b#~G~ Pull ~Y~{count,2}~w~/~M~{max,2}' }
-                    - { When: 'state == 2',                 OutputCode: '#b#~R~   GC ~Y~{count,2}~w~/~M~{max,2}' }
+                    - { When: 'gap is not null || skip is not null',    OutputCode: '{LastOutput?.ToLowerInvariant().Replace("~w~", "~K~")}' }
+                    - { When: 'pc is not null && C < 10',               OutputCode: "#g#~W~{new string('=', C)}>{new string(' ', HC)}" }
+                    - { When: 'state == 0',                             OutputCode: '#b#~C~Fetch ~Y~{count,2}~w~/~m~??' }
+                    - { When: 'state == 1',                             OutputCode: '#b#~G~ Pull ~Y~{count,2}~w~/~M~{max,2}' }
+                    - { When: 'state == 2',                             OutputCode: '#b#~R~   GC ~Y~{count,2}~w~/~M~{max,2}' }
 
     -   Name: Scrubber
         Flags:
