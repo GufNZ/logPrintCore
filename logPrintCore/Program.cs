@@ -1859,7 +1859,7 @@ internal static partial class Program {
 		lastPrintedTime = time;
 		progressDrawn = null;
 		Console.Out.WriteColours(flagsOutput);
-		Console.Out.WriteColours(output);
+		Console.Out.WriteColours(NormaliseLinebreaks(output));
 		queriedFlagStateChanged = false;
 
 		switch (stepMode) {
@@ -1945,6 +1945,13 @@ internal static partial class Program {
 					|| (exclGrepRE?.IsMatch(str) ?? false)
 				);
 		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static string? NormaliseLinebreaks(string? input) {
+		return OperatingSystem.IsWindows()
+			? ExpandNewlineOnlyRE().Replace(input ?? "", Environment.NewLine)
+			: input;
 	}
 
 	private static void SummariseLine(DateTime time, (LogLevel level, string marker) output) {
@@ -2036,4 +2043,7 @@ internal static partial class Program {
 
 	[GeneratedRegex(@"^(\d+)x$")]
 	private static partial Regex RepeatMultipleRE();
+
+	[GeneratedRegex(@"(?<!\r)\n")]
+	private static partial Regex ExpandNewlineOnlyRE();
 }
