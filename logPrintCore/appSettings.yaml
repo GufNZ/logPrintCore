@@ -2572,6 +2572,10 @@ RuleSets:
                 Match: '^(/.+/)([^/\s]+) ~~'
                 Replace: '%Dir%$1%Folder%$2 %Tilde%~~'
             -
+                Name: MergeFail
+                Match: '^(merge:) (\S*?)([^/]+) - (not something we can merge)'
+                Replace: '%RemotePrefix%$1 %DeletedBranch%$2%UpdatedBranch%$3%RemotePrefix% - %Forced%$4'
+            -
                 Name: Remote
                 Match: '^(remote:) (.+)'
                 Replace: '%RemotePrefix%$1 %Remote%$2'
