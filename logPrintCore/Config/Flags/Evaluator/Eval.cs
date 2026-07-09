@@ -275,7 +275,7 @@ internal sealed class Eval : IValidatableObject {
 				.GetConstructor(Type.EmptyTypes)
 				?.Invoke([]);
 			return (evaluator, alcWeakRef, null);
-		} catch (ReflectionTypeLoadException ex) {
+		} catch (SystemException ex) when (ex is BadImageFormatException || ex is ReflectionTypeLoadException) {
 			// Capture only the formatted string.
 			// ex itself, ex.Types[], and ex.LoaderExceptions[] all transitively reference the ALC and must NOT escape this frame.
 			var message = ex.ToString();
@@ -389,6 +389,8 @@ internal sealed class Eval : IValidatableObject {
 			using System.Linq;
 			using System.Reflection;
 
+			using logPrintCore.Utils;
+
 			namespace logPrintCore.Config.Flags.Evaluator;
 
 			public class {{
@@ -466,6 +468,8 @@ internal sealed class Eval : IValidatableObject {
 			}
 			""";
 
+		src = src.NormaliseNewlines(Environment.NewLine)!;
+
 #if DEBUG_COMPILE
 		File.WriteAllText(Path.Combine(Program.compileTemp, $"{className}.cs"), src);
 
@@ -515,7 +519,9 @@ internal sealed class Eval : IValidatableObject {
 			)
 			.AddReferences(
 				AppDomain.CurrentDomain.GetAssemblies()
+					.Append(typeof(Eval).Assembly)
 					.Where(a => !(string.IsNullOrEmpty(a.Location) || a.IsCollectible))
+					.DistinctBy(a => a.Location, StringComparer.OrdinalIgnoreCase)
 					.Select(a => MetadataReference.CreateFromFile(a.Location))
 			)
 			.AddSyntaxTrees(

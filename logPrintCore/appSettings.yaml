@@ -15,7 +15,7 @@ Docs:
             ~C~FILENAME~M~      Read from the specified file rather than ~C~STDIN~M~.  ~Y~Only the last filename is used.
             ~C~-~M~             Read from ~C~STDIN~M~ - ~y~this is the default~M~.
         
-            ~c~-A~M~            Output colours using ~c~ConsoleColor~M~ instead of using ~W~ANSI~M~.  ~R~Legacy code path - about ~$F80~5x~R~ slower.
+            ~c~-A~M~            Output colours using ~c~ConsoleColor~M~ instead of using ~W~ANSI~M~.  ~R~Legacy code path - about ~*F80~5x~R~ slower.
             ~c~-a~M~            Output colours using ~W~ANSI~M~ instead of using ~c~ConsoleColor~M~.  ~Y~This is the default if no ~c~-A~y~/~c~-a~Y~ are supplied.
         
             ~c~-C~M~            Strip colours from the output.  Other formatting still applies.
@@ -319,9 +319,9 @@ Docs:
                     C ~w~or~W~ CYAN     ~C~Cyan~W~.
                     W ~w~or~W~ WHITE    White.
         
-                ~$80F~Additionally, you can specify ~R~R~G~G~B~B~$80F~ colours via:
-                        ~W~$~R~RR~G~GG~$08F~BB~R~ ~w~where ~R~RR~w~, ~G~GG~w~, ~$08F~BB~w~ are ~W~2-digit hex values~w~ for ~r~red~w~, ~g~green~w~ and ~b~blue~w~ respectively;
-                     or ~W~$~R~R~G~G~$08F~B~R~    ~w~where  ~R~R~w~,  ~G~G~w~,  ~$08F~B~w~ are ~W~1-digit hex values~w~ for ~r~red~w~, ~g~green~w~ and ~b~blue~w~ respectively.
+                ~*80F~Additionally, you can specify ~R~R~G~G~B~B~*80F~ colours via:
+                        ~W~*~R~RR~G~GG~*08F~BB~R~ ~w~where ~R~RR~w~, ~G~GG~w~, ~*08F~BB~w~ are ~W~2-digit hex values~w~ for ~r~red~w~, ~g~green~w~ and ~b~blue~w~ respectively;
+                     or ~W~*~R~R~G~G~*08F~B~R~    ~w~where  ~R~R~w~,  ~G~G~w~,  ~*08F~B~w~ are ~W~1-digit hex values~w~ for ~r~red~w~, ~g~green~w~ and ~b~blue~w~ respectively.
         
                 ~y~Optional JSON formatting variables:~w~
                     ~G~JSONIndent    ~y~-~w~ If defined, this specifies the string to use for indentation.  (Defaults to ~y~3 spaces~w~)
@@ -1237,7 +1237,7 @@ FlagSets:
         Flags:
             -   Name: Stage
                 TransitionToOnMatch: '^/.+ ~\r?$|%|^~'
-                OnMatch: '^/.+/(?<dir>[^/]+) ~\r?$|(?<pc>\d+)%|^(?<gap>~)|(?<skip>^(?!=.*%))'
+                OnMatch: '(?<skip>^(?:\s*rename |[^%]+$)).|^/.+/(?<dir>[^/]+) ~\r?$|(?<pc>\d+)%|^(?<gap>~)'
                 Types:
                     dir:  string?
                     pc:   string?
@@ -1349,12 +1349,12 @@ __shared:
         JSONNewline:    '\n'
         JSONProp:       ~y~
         JSONColon:      '~Y~: '
-        JSONComma:      '~$A00~,'
-        JSONBrace:      ~$80F~
+        JSONComma:      '~*A00~,'
+        JSONBrace:      ~*80F~
         JSONBracket:    ~c~
         JSONString:     ~w~
         JSONBool:       ~C~
-        JSONInt:        ~$08F~
+        JSONInt:        ~*08F~
         JSONFloat:      '#b#~c~'
         JSONNull:       '#b#~R~'
         JSONUndefined:  '#r#~B~'
@@ -1889,7 +1889,7 @@ RuleSets:
                 Groups:
                     -   Name: message.url
                         Match: '(?<proto>https?)(?<s>://)(?<host>[^/]+)(?<path>/[^?#]*)?(?<query>\?[^#]*)?(?<fragment>#[^;]*)?'
-                        Replace: '#$08F#~R~${proto}~b~${s}~M~${host}~G~${path}~B~${query}~Y~${fragment}'
+                        Replace: '#*08F#~R~${proto}~b~${s}~M~${host}~G~${path}~B~${query}~Y~${fragment}'
                         Groups:
                             -   Name: query.?
                                 Match: '^.'
@@ -1902,7 +1902,7 @@ RuleSets:
                                 Replace: '~R~$0'
                             -   Name: query.%
                                 Match: '%..'
-                                Replace: '~$F80~$0'
+                                Replace: '~*F80~$0'
                             -   Name: fragment
                                 Match: '^#+'
                                 Replace: '~R~$0'
@@ -1913,16 +1913,16 @@ RuleSets:
                         Replace: '~W~#B#$0'
                     -   Name: event.navigate
                         Match: 'navigate'
-                        Replace: '~W~#$555#$0'
+                        Replace: '~W~#*555#$0'
                     -   Name: event.reload
                         Match: 'reload'
-                        Replace: '~M~#$555#$0'
+                        Replace: '~M~#*555#$0'
                     -   Name: event.route
                         Match: 'route'
-                        Replace: '~$F80~#$555#$0'
+                        Replace: '~*F80~#*555#$0'
                     -   Name: event.load
                         Match: '^load'
-                        Replace: '~Y~#$555#$0'
+                        Replace: '~Y~#*555#$0'
                     -   Name: event.shutdown
                         Match: '^shutdown'
                         Replace: '~k~#Y#$0'
@@ -2555,10 +2555,11 @@ RuleSets:
             Path:               ~w~
             File:               ~W~
             Dots:               ~K~
-            Num:                ~B~
+            Rename:             ~M~
+            Num:                ~*04F~
             Plus:               ~g~
             Minus:              ~r~
-            Summary:            ~m~
+            Summary:            ~*A0A~
             UpdatingMaster:     ~c~
             GC:                 ~K~
             Cruft:              ~w~
@@ -2586,14 +2587,14 @@ RuleSets:
             -
                 Name: Bad
                 Match: '^(Please commit your changes or stash them before you merge\.|error:.+)'
-                Replace: '~$F33~#$600#$0'
+                Replace: '~*F33~#*600#$0'
             -
                 Name: From
-                Match: '^(From) (\S+/)([^/]+)/(.+)$'
+                Match: '^(From) (\S+/)([^/]+)/(.+)\r?$'
                 Replace: '%From%$1 %Url%$2%Company%$3%Url%/%Project%$4'
             -
                 Name: Branch
-                Match: '^ (?<type>.) (?:(?<newDel>\[[^]]+])|(?<move>[\da-f]+\.+\S+))(?<w1>\s+)(?<name>\S+)(?<w2>\s+)-> (?<origin>origin/)?(?<remoteName>(?:(?>[^(\n]+)|\()+?)(?<forced>\(forced.+)?$'
+                Match: '^ (?<type>.) (?:(?<newDel>\[[^]]+])|(?<move>[\da-f]+\.+\S+))(?<w1>\s+)(?<name>\S+)(?<w2>\s+)-> (?<origin>origin/)?(?<remoteName>(?:(?>[^(\n]+)|\()+?)(?<forced>\(forced.+)?\r?$'
                 Replace: ' ${type} ${newDel}${move}${w1}%Name%${name}${w2}%Arrow%-> %Origin%${origin}%RemoteName%${remoteName}${forced}'
                 Groups:
                     - { Name: type.0, Match: '\*', Replace: '%NewBranch%$0' }
@@ -2604,56 +2605,66 @@ RuleSets:
                     - { Name: newDel.0, Match: '\[new branch]', Replace: '%NewBranch%$0' }
                     - { Name: newDel.1, Match: '\[new tag]', Replace: '%NewTag%$0' }
                     - { Name: newDel.2, Match: '\[deleted]', Replace: '%DeletedBranch%$0' }
-                    - { Name: move.0, Match: '([\da-f]+)\.+(\1+)', Replace: '%FromCommit%$1%Arrow%..%Forced%$2' }
-                    - { Name: move.1, Match: '([\da-f]+)\.+([\da-f]+)', Replace: '%FromCommit%$1%Arrow%..%ToCommit%$2' }
+                    - { Name: move.0, Match: '^([\da-f]+)\.+(\1+)$', Replace: '%FromCommit%$1%Arrow%..%Forced%$2' }
+                    - { Name: move.1, Match: '^([\da-f]+)\.+([\da-f]+)$', Replace: '%FromCommit%$1%Arrow%..%ToCommit%$2' }
                     - { Name: name.0, Match: '\(none\)', Replace: '%None%$0' }
-                    - { Name: name.1, Match: '(?<!-)ma(?:ster|in)', Replace: '%Master%$0' }
-                    - { Name: name.2, Match: '(?<!-)develop', Replace: '%Develop%$0' }
-                    - { Name: remoteName.1, Match: '(?<!-)ma(?:ster|in)', Replace: '%Master%$0' }
-                    - { Name: remoteName.2, Match: '(?<!-)develop', Replace: '%Develop%$0' }
+                    - { Name: name.1, Match: '\bma(?:ster|in)\b', Replace: '%Master%$0' }
+                    - { Name: name.2, Match: '\bdevelop\b', Replace: '%Develop%$0' }
+                    - { Name: remoteName.1, Match: '\bma(?:ster|in)\b', Replace: '%Master%$0' }
+                    - { Name: remoteName.2, Match: '\bdevelop\b', Replace: '%Develop%$0' }
             -
                 Name: UpToDate
-                Match: '^Already up to date\.$'
+                Match: '^Already up to date\.\r?$'
                 Replace: '%AlreadyUpToDate%$0'
             -
                 Name: Updating
-                Match: '^(Updating) (\S+)(\.\.| -> )(\S+)$'
+                Match: '^(Updating) (\S+)(\.\.| -> )(\S+)\r?$'
                 Replace: '%Updating%$1 %FromCommit%$2%Arrow%$3%ToCommit%$4'
                 Groups:
-                    - { Name: 2.1, Match: '(?<!-)ma(?:ster|in)', Replace: '%Master%$0' }
-                    - { Name: 2.2, Match: '(?<!-)develop', Replace: '%Develop%$0' }
-                    - { Name: 4.1, Match: '(?<!-)ma(?:ster|in)', Replace: '%Master%$0' }
-                    - { Name: 4.2, Match: '(?<!-)develop', Replace: '%Develop%$0' }
+                    - { Name: 2.1, Match: '\bma(?:ster|in)\b', Replace: '%Master%$0' }
+                    - { Name: 2.2, Match: '\bdevelop\b', Replace: '%Develop%$0' }
+                    - { Name: 4.1, Match: '\bma(?:ster|in)\b', Replace: '%Master%$0' }
+                    - { Name: 4.2, Match: '\bdevelop\b', Replace: '%Develop%$0' }
 
             -
                 Name: FastForward
-                Match: '^Fast-forward$'
+                Match: '^Fast-forward\r?$'
                 Replace: '%FastForward%$0'
             -
                 Name: FileChange
                 Match: '^\s*(?<dots>\.{3})?(?<path>\S*/)?(?<file>[^\s/]+)(?<w1>\s+)\|(?<w2>\s+)(?<num>\d+) (?<plus>\+*)(?<minus>-*)'
                 Replace: '  %Dots%${dots}%Path%${path}%File%${file}${w1}%Arrow%|${w2}%Num%${num} %Plus%${plus}%Minus%${minus}'
             -
+                Name: FileRename
+                Match: '^\s*(?<dots>\.{3})?(?<path>\S*/)?(?<bra>\{)?(?<file>[^\s/]+)(?<w1>\s+)(?<arrow>=>)? (?<file2>[^\s/]+)(?<ket>\})(?<w2>\s+)\|(?<w3>\s+)(?<num>\d+) (?<plus>\+*)(?<minus>-*)'
+                Replace: '  %Dots%${dots}%Path%${path}~*F80~${bra}%From%${file}${w1}%Arrow%${arrow} %ToCommit%${file2}~*F80~${ket}%Arrow%${w2}|${w3}%Num%${num} %Plus%${plus}%Minus%${minus}'
+            -
                 Name: Summary
-                Match: '^(?<changed>\d+ files? changed(?:, )?)?(?<insertions>\d+ insertions? \(\+\)(?:, )?)?(?<deletions>\d+ deletions? \(-\))?$'
+                Match: '^\s*(?<changed>\d+ files? changed(?:, )?)?(?<insertions>\d+ insertions? ?\(\+\)(?:, )?)?(?<deletions>\d+ deletions? ?\(-\))?\r?$'
                 Replace: '  %Summary%${changed}%Plus%${insertions}%Minus%${deletions}'
                 Groups:
                     - { Name: changed, Match: '\d+', Replace: '%Num%$0' }
-                    - { Name: insertions, Match: '\d+', Replace: '%num%$0' }
-                    - { Name: deletions, Match: '\d+', Replace: '%num%$0' }
+                    - { Name: insertions, Match: '\d+', Replace: '%Num%$0' }
+                    - { Name: deletions, Match: '\d+', Replace: '%Num%$0' }
             -
                 Name: Mode
-                Match: '(\s*\S+) mode (\d+) (.+)'
+                Match: '\s*(\S+) mode (\d+) (.+)'
                 Replace: '$1 mode %Num%$2 $3'
                 Groups:
-                    - { Name: 2.0, Match: '4', Replace: '~Y~$0' }
-                    - { Name: 2.1, Match: '6', Replace: '~C~$0' }
-                    - { Name: 2.2, Match: '7', Replace: '~M~$0' }
-                    - { Name: 3, Match: '^(?<dots>\.{3})?(?<path>\S*/)(?<file>[^\s/]+)$', Replace: '%Dots%${dots}%Path%${path}%File%${file}' }
+                    - { Name: 1.create, Match: create, Replace: '%Plus%$0' }
+                    - { Name: 1.delete, Match: delete, Replace: '%Minus%$0' }
+                    - { Name: 2.4, Match: '4', Replace: '~Y~$0' }
+                    - { Name: 2.6, Match: '6', Replace: '~C~$0' }
+                    - { Name: 2.7, Match: '7', Replace: '~M~$0' }
+                    - { Name: 3, Match: '^(?<dots>\.{3})?(?<path>\S*/)?(?<file>[^\s/]+)\r$', Replace: '%Dots%${dots}%Path%${path}%File%${file}' }
+            -
+                Name: Rename
+                Match: '^\s*(rename) (?<dots>\.{3})?(?<path>\S*/)?(\{)(\S+) (=>) (\S+)(\}) (\()(\d+%)(\))\r?$'
+                Replace: '%Rename%$1 %Dots%${dots}%Path%${path}~*F80~$2%From%$3 %Arrow%$4 %ToCommit%$5$~*F80~$6 ~K~$7~*F80~$8~K~$9'
             -
                 Name: GC
                 Test: '^(?!.*\e\[A).*'
-                Match: '^(?:(?:Co(?:unt|mpress)|Enumerat|Travers|Re(?:ceiv|solv)|Unpack|Writ)ing||Delta).+$'
+                Match: '^(?:(?:Co(?:unt|mpress)|Enumerat|Travers|Re(?:ceiv|solv)|Unpack|Writ)ing||Delta).+\r?$'
                 Replace: '%GC%$0'
                 Groups:
                     - { Name: 0.Cruft, Match: 'cruft', Replace: '%Cruft%$0' }

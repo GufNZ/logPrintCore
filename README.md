@@ -60,4 +60,5 @@ If the above is not an option, the following also works:
 
 ```
 //LATER: if .NetCore ever gives us a cross-platform way to SIGINT the child process, do that on ^C...
+//MAYBE: find errors?
 ```

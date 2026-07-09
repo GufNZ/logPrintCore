@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+using logPrintCore.Utils;
+
 namespace logPrintCore.Ansi;
 
 internal abstract class ColourPart : Part, IEquatable<ColourPart> {
@@ -169,7 +171,7 @@ internal abstract class ColourPart : Part, IEquatable<ColourPart> {
 		}
 
 		_builder.Append(SUFFIX);
-		return _builder.ToString();
+		return _builder.ToStringAndClear();
 	}
 
 	public override void ToConsole(TextWriter writer) {
@@ -200,7 +202,7 @@ internal abstract class ColourPart : Part, IEquatable<ColourPart> {
 		}
 
 		if (_builder.Length > 0) {
-			writer.Write($"{PREFIX}{_builder}{SUFFIX}");
+			writer.Write($"{PREFIX}{_builder.ToStringAndClear()}{SUFFIX}");
 		}
 	}
 

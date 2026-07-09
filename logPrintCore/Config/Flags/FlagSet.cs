@@ -19,6 +19,8 @@ internal class FlagSet {
 	private event StateChangeCallback? OnReset;
 
 
+	private static readonly StringBuilder builder = new();
+
 	private static readonly Utils.OrderedDictionary<FlagSet, string> trackedIDs = new(ReferenceEqualityComparer<FlagSet>.Instance);
 
 
@@ -131,8 +133,12 @@ internal class FlagSet {
 	}
 
 	private string ProcessFlags(string line) {
+		builder
+			.Clear()
+			.EnsureCapacity(Flags.Length * 7 + SEPARATOR.Length);
+
 		return Flags.Aggregate(
-			new StringBuilder(Flags.Length * 7 + SEPARATOR.Length),
+			builder,
 			(sb, flag) => sb.Append(flag.Process(line)),
 			sb => sb
 				.Append(SEPARATOR)
@@ -141,8 +147,12 @@ internal class FlagSet {
 	}
 
 	public virtual string Reset(string line) {
+		builder
+			.Clear()
+			.EnsureCapacity(Flags.Length * 7 + SEPARATOR.Length);
+
 		var result = Flags.Aggregate(
-			new StringBuilder(Flags.Length * 7 + SEPARATOR.Length),
+			builder,
 			(sb, flag) => sb.Append(flag.Reset()),
 			sb => sb
 				.Append(SEPARATOR)

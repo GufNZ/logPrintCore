@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using logPrintCore.Ansi;
+using logPrintCore.Utils;
 
 namespace logPrintCore.Config.Rules;
 
@@ -250,6 +251,6 @@ internal sealed class HighlightRule : Rule {
 			popFixup.AppendFormat("{0}>{0}", pushes.Pop());
 		}
 
-		return popFixup.ToString();
+		return popFixup.ToStringAndClear();
 	}
 }

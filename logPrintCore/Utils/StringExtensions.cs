@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 
 namespace logPrintCore.Utils;
 
-internal static partial class StringExtensions {
+public static partial class StringExtensions {
 	extension<T>(T thing)
 		where T : struct {
 		public T? NullIfDefault() {
@@ -125,8 +125,15 @@ internal static partial class StringExtensions {
 
 			return string.Concat(allParts);
 		}
+
+		public string? NormaliseNewlines(string newline = "\n") {
+			return NormaliseNewlinesRE().Replace(str ?? "", newline).NullIfEmpty();
+		}
 	}
 
+
+	[GeneratedRegex(@"(?>\r\n|\r|\n)", RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant)]
+	private static partial Regex NormaliseNewlinesRE();
 
 	private static readonly MethodInfo stringGetNonRandomizedHashCode = typeof(string).GetMethod("GetNonRandomizedHashCode", BindingFlags.NonPublic | BindingFlags.Instance)!;
 

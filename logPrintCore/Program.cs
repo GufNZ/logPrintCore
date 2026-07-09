@@ -1177,7 +1177,7 @@ internal static partial class Program {
 
 
 		public override string ToString() {
-			return $"${_r:X2}{_g:X2}{_b:X2}";
+			return $"{AnsiConsoleColourExtensions.HEX}{_r:X2}{_g:X2}{_b:X2}";
 		}
 
 
@@ -1333,7 +1333,7 @@ internal static partial class Program {
 			sb.Append($"#{Colour.Lerp(colourBefore, (t - p0) / (p1 - p0), colourAfter)}# ");
 		}
 
-		return sb.ToString();
+		return sb.ToStringAndClear();
 	}
 
 	private static string FunkyIndent(int length) {
@@ -1408,7 +1408,7 @@ internal static partial class Program {
 				}
 			}
 
-			return sb.ToString();
+			return sb.ToStringAndClear();
 		}
 
 
@@ -1547,13 +1547,12 @@ internal static partial class Program {
 						}
 
 
-						Console.Out.WriteLineColours(output.ToString());
-						output.Clear();
+						Console.Out.WriteLineColours(output.ToStringAndClear());
 						output.Append(Prefix(++i) + OTHERS + key);
 					}
 
 					if (output.Length > 0) {
-						Console.Out.WriteLineColours(output.ToString());
+						Console.Out.WriteLineColours(output.ToStringAndClear());
 					}
 				}
 
@@ -1695,18 +1694,17 @@ internal static partial class Program {
 
 
 			accumulated.Append(line);
-			var output = accumulated.ToString();
+			var output = accumulated.ToStringAndClear();
 			if (!output.ContainsAny(lineBreakChars)) {
 				continue;
 			}
 
 
-			accumulated.Clear();
 			ProcessAndOutputLine(output);
 		}
 
 		if (accumulated.Length > 0) {
-			ProcessAndOutputLine(accumulated.ToString());
+			ProcessAndOutputLine(accumulated.ToStringAndClear());
 		}
 	}
 
@@ -1728,8 +1726,7 @@ internal static partial class Program {
 					}
 
 
-					recordBuilder.Clear();
-					ProcessAndOutputLine(record.Aggregate(recordBuilder, (sb, l) => sb.Append(l), sb => sb.ToString()));
+					ProcessAndOutputLine(record.Aggregate(recordBuilder.Clear(), (sb, l) => sb.Append(l), sb => sb.ToStringAndClear()));
 					record.Clear();
 				}
 
@@ -1741,8 +1738,7 @@ internal static partial class Program {
 
 			var isStartOfNewRecord = ruleSet.RecordStart!.IsMatch(line);
 			if (isStartOfNewRecord && record.Count > 0) {
-				recordBuilder.Clear();
-				ProcessAndOutputLine(record.Aggregate(recordBuilder, (sb, l) => sb.Append(l), sb => sb.ToString()));
+				ProcessAndOutputLine(record.Aggregate(recordBuilder.Clear(), (sb, l) => sb.Append(l), sb => sb.ToStringAndClear()));
 				record.Clear();
 			}
 
@@ -1760,8 +1756,7 @@ internal static partial class Program {
 
 
 		if (record.Count > 0) {
-			recordBuilder.Clear();
-			ProcessAndOutputLine(record.Aggregate(recordBuilder, (sb, l) => sb.Append(l), sb => sb.ToString()));
+			ProcessAndOutputLine(record.Aggregate(recordBuilder.Clear(), (sb, l) => sb.Append(l), sb => sb.ToStringAndClear()));
 		}
 	}
 
@@ -1818,9 +1813,9 @@ internal static partial class Program {
 			: ProcessFlags;
 
 		var flagsOutput = flagSets.Aggregate(
-			new StringBuilder(),
+			builder.Clear(),
 			(sb, flagSet) => sb.Append(action(flagSet, line)),
-			sb => sb.ToString()
+			sb => sb.ToStringAndClear()
 		);
 
 		if (ProcessQueryTests()) {

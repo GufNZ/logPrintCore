@@ -16,10 +16,10 @@ public static partial class ColorExtensions {
 			}
 
 
-			var longStr = $"${colour.R:X2}{colour.G:X2}{colour.B:X2}";
+			var longStr = $"{AnsiConsoleColourExtensions.HEX}{colour.R:X2}{colour.G:X2}{colour.B:X2}";
 			var match = IsShort().Match(longStr);
 			return match.Success
-				? "$" + string.Join("", match.Groups[1].Captures.Select(c => c.Value))
+				? AnsiConsoleColourExtensions.HEX + string.Join("", match.Groups[1].Captures.Select(c => c.Value))
 				: longStr;
 		}
 	}

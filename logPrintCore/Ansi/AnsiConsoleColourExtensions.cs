@@ -28,7 +28,7 @@ internal static partial class AnsiConsoleColourExtensions {
 	public const char RESET = '!';
 	public const char PUSH = '<';
 	public const char POP = '>';
-	public const char HEX = '$';
+	public const char HEX = '*';
 
 	public const string PUSH_FG = "~<~";	//NOTE: char.ToString() isn't considered constant by the compiler...
 	public const string PUSH_BG = "#<#";
@@ -302,7 +302,7 @@ internal static partial class AnsiConsoleColourExtensions {
 						Return(part);
 						return sb.Append(part.ToAnsi());
 					},
-				sb => sb.ToString()
+				sb => sb.ToStringAndClear()
 			);
 		}
 	}
@@ -371,10 +371,7 @@ internal static partial class AnsiConsoleColourExtensions {
 					} else {
 						sawColourCodes = true;
 						if (parseBuilder.Length > 0) {
-							yield return textPartPool.Rent().Init(parseBuilder.ToString());
-
-
-							parseBuilder.Clear();
+							yield return textPartPool.Rent().Init(parseBuilder.ToStringAndClear());
 						}
 
 
@@ -407,10 +404,7 @@ internal static partial class AnsiConsoleColourExtensions {
 					} else {
 						sawColourCodes = true;
 						if (parseBuilder.Length > 0) {
-							yield return textPartPool.Rent().Init(parseBuilder.ToString());
-
-
-							parseBuilder.Clear();
+							yield return textPartPool.Rent().Init(parseBuilder.ToStringAndClear());
 						}
 
 
@@ -443,7 +437,7 @@ internal static partial class AnsiConsoleColourExtensions {
 
 
 		if (parseBuilder.Length > 0) {
-			yield return textPartPool.Rent().Init(parseBuilder.ToString());
+			yield return textPartPool.Rent().Init(parseBuilder.ToStringAndClear());
 		}
 
 

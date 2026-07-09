@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Text;
 
+using logPrintCore.Utils;
+
 namespace logPrintCore;
 
 internal interface ILineReader : IDisposable {
@@ -22,18 +24,18 @@ internal interface ILineReader : IDisposable {
 						builder.Append((char)reader.Read());
 					}
 
-					return builder.ToString();
+					return builder.ToStringAndClear();
 				}
 
 				case '\n':
-					return builder.ToString();
+					return builder.ToStringAndClear();
 			}
 		}
 
 
 		// EOF:
 		return builder.Length > 0
-			? builder.ToString()
+			? builder.ToStringAndClear()
 			: null;
 	}
 }

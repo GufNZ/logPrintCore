@@ -303,8 +303,7 @@ internal partial class Rule {
 			switch (part) {
 				case JsonReplacePart jsonReplacePart:
 					FormatJson(jsonReplacePart.evaluate(_json, match), jsonReplacePart.compactJson);
-					_resultBuilder.Append(ProcessGroup(_jsonBuilder.ToString(), part.groupName!));
-					_jsonBuilder.Clear();
+					_resultBuilder.Append(ProcessGroup(_jsonBuilder.ToStringAndClear(), part.groupName!));
 					break;
 
 				case { groupName: not null }:
@@ -327,9 +326,9 @@ internal partial class Rule {
 #endif
 		return Push
 			? AnsiConsoleColourExtensions.PUSH_COLOURS
-				.RCoalesce(_resultBuilder.ToString().NullIfEmpty(), AnsiConsoleColourExtensions.POP_COLOURS)
+				.RCoalesce(_resultBuilder.ToStringAndClear().NullIfEmpty(), AnsiConsoleColourExtensions.POP_COLOURS)
 			?? ""
-			: _resultBuilder.ToString();
+			: _resultBuilder.ToStringAndClear();
 	}
 
 	private string ProcessGroup(Group matchGroup, string name) {
