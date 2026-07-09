@@ -389,7 +389,9 @@ internal sealed class Eval : IValidatableObject {
 			using System.Linq;
 			using System.Reflection;
 
+			#pragma warning disable CS8019 // Unnecessary using directive.
 			using logPrintCore.Utils;
+			#pragma warning restore CS8019 // Unnecessary using directive.
 
 			namespace logPrintCore.Config.Flags.Evaluator;
 
